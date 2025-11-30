@@ -6,7 +6,7 @@ import { Staff, Service, ScheduleResult, Role, Group, RoleConfig, DaySchedule } 
 import { ICONS, MOCK_STAFF, MOCK_SERVICES } from './constants';
 import { Card, Button, Badge, MultiSelect } from './components/ui';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Moon, Sun, Edit3, X, Save, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Moon, Sun, Edit3, X, Save, CheckCircle2, RefreshCw, Info, Check } from 'lucide-react';
 
 // Helper for LocalStorage
 const loadState = <T,>(key: string, defaultValue: T): T => {
@@ -39,6 +39,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [monteCarloIters] = useState(1000); 
+  const [showInfo, setShowInfo] = useState(false);
   
   // Edit Mode
   const [isEditing, setIsEditing] = useState(false);
@@ -279,6 +280,58 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans pb-20 transition-all duration-300 ${isBlackAndWhite ? 'bg-white text-black' : 'bg-gray-100 text-gray-800'}`}>
       
+      {/* Modal for Info */}
+      {showInfo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowInfo(false)}>
+              <div className={`relative rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border-0 max-h-[90vh] overflow-y-auto ${isBlackAndWhite ? 'bg-white text-black border-2 border-black' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+                  <div className={`p-5 border-b flex justify-between items-center sticky top-0 z-10 ${isBlackAndWhite ? 'bg-black text-white' : 'bg-indigo-600 text-white'}`}>
+                      <div className="flex items-center gap-2">
+                          <Info className="w-6 h-6" />
+                          <h3 className="font-bold text-xl">Nöbetmatik v20 Özellikleri</h3>
+                      </div>
+                      <button onClick={() => setShowInfo(false)} className="hover:bg-white/20 p-1 rounded-full"><X className="w-6 h-6" /></button>
+                  </div>
+                  <div className="p-6 space-y-6">
+                      
+                      <div className="space-y-3">
+                          <h4 className={`text-sm font-bold uppercase tracking-wider border-b pb-1 ${isBlackAndWhite ? 'border-black text-black' : 'border-indigo-100 text-indigo-600'}`}>1. Temel Kısıtlamalar (Zorunlu)</h4>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <li className="flex gap-2 items-start"><Check className="w-4 h-4 mt-0.5 text-green-600 shrink-0" /> <span><b>Peş Peşe Gün Yasağı:</b> Bir kişi dün nöbet tuttuysa bugün, bugün tuttuysa yarın tutamaz.</span></li>
+                              <li className="flex gap-2 items-start"><Check className="w-4 h-4 mt-0.5 text-green-600 shrink-0" /> <span><b>İzin (Off) Günleri:</b> Kişinin 'Nöbet Yazılamayacak Günler' listesindeki günlere asla nöbet yazılmaz.</span></li>
+                              <li className="flex gap-2 items-start"><Check className="w-4 h-4 mt-0.5 text-green-600 shrink-0" /> <span><b>Kıdem Yetkisi:</b> Servisin izin verdiği kıdemler dışında personel atanmaz.</span></li>
+                              <li className="flex gap-2 items-start"><Check className="w-4 h-4 mt-0.5 text-green-600 shrink-0" /> <span><b>Çifte Nöbet Yasağı:</b> Aynı kişiye aynı gün içinde birden fazla görev yazılmaz.</span></li>
+                          </ul>
+                      </div>
+
+                      <div className="space-y-3">
+                          <h4 className={`text-sm font-bold uppercase tracking-wider border-b pb-1 ${isBlackAndWhite ? 'border-black text-black' : 'border-indigo-100 text-indigo-600'}`}>2. Akıllı Dağıtım Algoritması</h4>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <li className="flex gap-2 items-start"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" /> <span><b>İstek Nöbetleri:</b> Kişinin 'İstek' günlerine (Kalp ikonu) öncelik verilir.</span></li>
+                              <li className="flex gap-2 items-start"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" /> <span><b>Günaşırı Koruması:</b> Ayarlardan açılırsa, nöbetler arasına en az 2 gün koymaya çalışır.</span></li>
+                              <li className="flex gap-2 items-start"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" /> <span><b>Grup Dağılımı:</b> Aynı güne aynı ekipten (A, B vb.) yığılma olmasını engeller, çeşitlilik sağlar.</span></li>
+                              <li className="flex gap-2 items-start"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" /> <span><b>Rastgele Dağıtım:</b> Boşlukları ay sonuna yığmak yerine ayı rastgele tarayarak homojen dağıtır.</span></li>
+                          </ul>
+                      </div>
+
+                       <div className="space-y-3">
+                          <h4 className={`text-sm font-bold uppercase tracking-wider border-b pb-1 ${isBlackAndWhite ? 'border-black text-black' : 'border-indigo-100 text-indigo-600'}`}>3. Adalet ve Hedefler</h4>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <li className="flex gap-2 items-start"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 shrink-0"></span> <span><b>Kota Hedefleri:</b> Herkesin 'Servis' ve 'Acil' nöbet sayılarını hedefe en yakın tutmaya çalışır.</span></li>
+                              <li className="flex gap-2 items-start"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 shrink-0"></span> <span><b>Hafta Sonu Limiti:</b> Kişilere belirlenen sayıdan fazla Cumartesi/Pazar yazmaz.</span></li>
+                              <li className="flex gap-2 items-start"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 shrink-0"></span> <span><b>Cmt/Paz Dengesi:</b> Bir kişinin sürekli Cumartesi veya sürekli Pazar tutmasını engeller, eşitler.</span></li>
+                              <li className="flex gap-2 items-start"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 shrink-0"></span> <span><b>Öncelikli Kıdemler:</b> Servis ayarlarında 'Öncelikli' seçilen kıdemlere torpil geçer.</span></li>
+                          </ul>
+                      </div>
+
+                      <div className={`mt-4 p-4 rounded-xl text-xs ${isBlackAndWhite ? 'bg-gray-100 border border-black' : 'bg-indigo-50 text-indigo-800'}`}>
+                          <strong>Not:</strong> Sistem "Monte Carlo" simülasyonu kullanır. Yani binlerce olası takvimi dener ve en az hataya (boşluksuz ve hedeflere en uygun) sahip olanı size sunar. Eğer sonuçtan memnun kalmazsanız tekrar oluştur butonuna basarak farklı bir kombinasyon deneyebilirsiniz.
+                      </div>
+
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* Modal for Manual Edit */}
       {editingSlot && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
@@ -351,13 +404,22 @@ export default function App() {
                   </button>
                 ))}
               </nav>
-              <button 
-                onClick={() => setIsBlackAndWhite(!isBlackAndWhite)}
-                className={`p-2.5 rounded-full transition-all duration-200 ${isBlackAndWhite ? 'bg-white text-black' : 'bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600'}`}
-                title={isBlackAndWhite ? "Normal Moda Geç" : "Yüksek Kontrast Moduna Geç"}
-              >
-                 {isBlackAndWhite ? <Sun className="w-5 h-5"/> : <Moon className="w-5 h-5"/>}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                    onClick={() => setShowInfo(true)}
+                    className={`p-2.5 rounded-full transition-all duration-200 ${isBlackAndWhite ? 'bg-white text-black' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+                    title="Sistem Özellikleri ve Kurallar"
+                >
+                    {ICONS.Info}
+                </button>
+                <button 
+                    onClick={() => setIsBlackAndWhite(!isBlackAndWhite)}
+                    className={`p-2.5 rounded-full transition-all duration-200 ${isBlackAndWhite ? 'bg-white text-black' : 'bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600'}`}
+                    title={isBlackAndWhite ? "Normal Moda Geç" : "Yüksek Kontrast Moduna Geç"}
+                >
+                    {isBlackAndWhite ? <Sun className="w-5 h-5"/> : <Moon className="w-5 h-5"/>}
+                </button>
+              </div>
             </div>
           </div>
         </div>
