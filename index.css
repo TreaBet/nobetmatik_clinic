@@ -1,0 +1,135 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  @apply bg-gray-100 text-slate-800 antialiased min-h-screen;
+  /* v17 uses gray-100 background, so we set that as default */
+  background-color: #f3f4f6 !important; 
+  color: #1f2937 !important;
+}
+
+#root {
+  @apply min-h-screen flex flex-col;
+}
+
+/* REPORT TABLE STYLES - STRICT CONTRAST */
+.report-table-container {
+  @apply overflow-x-auto rounded-xl bg-white;
+}
+
+.report-table {
+  @apply min-w-full divide-y divide-gray-200 border-collapse bg-white;
+}
+
+.report-table thead th {
+  /* Header: Dark Slate/Indigo hybrid for better look */
+  @apply bg-slate-800 text-white px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky top-0 z-20 border-b border-gray-300;
+}
+
+.report-table tbody td {
+  /* Default Cell */
+  @apply px-4 py-3 text-sm border-b border-gray-100 bg-white text-slate-900 align-top transition-colors;
+}
+
+/* Sticky First Column */
+.report-table .sticky-col {
+  @apply sticky left-0 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)];
+}
+
+/* Specific background for sticky cells */
+.report-table tbody .sticky-col {
+  @apply bg-white text-slate-900 font-medium;
+}
+.report-table thead .sticky-col {
+  @apply bg-slate-800 text-white z-30 shadow-none; 
+}
+
+/* Weekend Row Highlight (Subtle Orange/Yellow tint) */
+.report-table tr.is-weekend td {
+  @apply bg-orange-50/50;
+}
+.report-table tr.is-weekend .sticky-col {
+  @apply bg-orange-50;
+}
+
+/* Hover Effects */
+.report-table tbody tr:hover td {
+  background-color: #f8fafc !important; /* slate-50 */
+}
+.report-table tbody tr:hover .sticky-col {
+  background-color: #f8fafc !important;
+}
+
+/* --- BADGES --- */
+.slot-badge {
+  @apply px-3 py-2 rounded-lg border mb-1 block w-full text-left truncate transition-all cursor-default shadow-sm;
+}
+.slot-badge.clickable:hover {
+  @apply ring-2 ring-indigo-400 scale-[1.02] cursor-pointer shadow-md z-10 relative;
+}
+
+.slot-empty {
+  @apply bg-rose-50 border-rose-200 text-rose-700 font-bold;
+}
+
+.slot-normal {
+  @apply bg-white border-gray-200 text-gray-800 hover:border-indigo-300;
+}
+
+.slot-emergency {
+  @apply bg-rose-50 border-rose-100 text-rose-800;
+}
+
+/* --- HIGH CONTRAST (B/W) MODE --- */
+.high-contrast .report-table-container {
+  @apply border-2 border-black rounded-none shadow-none;
+}
+
+.high-contrast .report-table thead th {
+  @apply bg-black text-white border-b-2 border-black;
+}
+
+.high-contrast .report-table tbody td {
+  @apply text-black border-black border-b bg-white font-medium !important;
+}
+
+.high-contrast .report-table tr.is-weekend td,
+.high-contrast .report-table tr.is-weekend .sticky-col {
+  @apply bg-gray-100 !important;
+  background-image: linear-gradient(45deg, #000000 5%, transparent 5%, transparent 50%, #000000 50%, #000000 55%, transparent 55%, transparent);
+  background-size: 10px 10px;
+  background-color: #f3f4f6 !important;
+  opacity: 0.9;
+}
+
+/* Sticky Col B/W */
+.high-contrast .report-table tbody .sticky-col {
+  @apply bg-white border-r-2 border-black text-black !important;
+  box-shadow: none !important;
+}
+.high-contrast .report-table thead .sticky-col {
+  @apply bg-black text-white border-r-2 border-white !important;
+  box-shadow: none !important;
+}
+
+/* Badges B/W */
+.high-contrast .slot-badge {
+  @apply bg-white text-black border border-black rounded-none shadow-none !important;
+}
+.high-contrast .slot-empty {
+  @apply border-2 border-dashed border-black bg-transparent !important;
+}
+.high-contrast .slot-emergency {
+  @apply border-black font-bold underline !important;
+}
+
+/* Hover B/W */
+.high-contrast .report-table tbody tr:hover td {
+  @apply bg-gray-200 !important;
+}
