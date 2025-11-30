@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Users, Calendar, Settings, ShieldCheck, Download, Trash2, Plus, UserPlus, FileSpreadsheet, AlertTriangle, CheckSquare, Heart, Upload, FileDown } from 'lucide-react';
+import { Users, Calendar, Settings, ShieldCheck, Download, Trash2, Plus, UserPlus, FileSpreadsheet, AlertTriangle, CheckSquare, Heart, Upload, FileDown, Info } from 'lucide-react';
 
 export const ICONS = {
     Users: <Users className="w-5 h-5" />,
@@ -16,7 +16,8 @@ export const ICONS = {
     Excel: <FileSpreadsheet className="w-5 h-5" />,
     Alert: <AlertTriangle className="w-5 h-5" />,
     Check: <CheckSquare className="w-4 h-4" />,
-    Heart: <Heart className="w-4 h-4" />
+    Heart: <Heart className="w-4 h-4" />,
+    Info: <Info className="w-5 h-5" />
 };
 
 export const MOCK_STAFF = [
