@@ -1,9 +1,13 @@
 
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./**/*.{js,ts,jsx,tsx}",
+    // 1. Projedeki (alt klasörler dahil) tüm HTML, JS, TS, JSX ve TSX dosyalarını tara
+    "./**/*.{html,js,ts,jsx,tsx}",
+    
+    // 2. ÖNEMLİ: node_modules klasörünü TARAMA (Başındaki ! işareti 'hariç tut' demektir)
+    "!./node_modules/**"
   ],
   theme: {
     extend: {
