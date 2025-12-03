@@ -98,7 +98,7 @@ export class Scheduler {
     // Iterate Days
     for (const day of daysToProcess) {
       const dayOfWeek = this.getDayOfWeek(day);
-      const isFriSatSun = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0;
+      const isWeekend = dayOfWeek === 6 || dayOfWeek === 0; // Sat or Sun
       const isSat = dayOfWeek === 6;
       const isSun = dayOfWeek === 0;
 
@@ -144,8 +144,9 @@ export class Scheduler {
                 if (stats.service >= person.quotaService) return false;
               }
 
-              // 6. Hard Constraint: Weekend Limit
-              if (isFriSatSun && stats.weekend >= person.weekendLimit) return false;
+              // 6. Hard Constraint: Weekend Limit (Sat/Sun only)
+              // Updated to only count Sat/Sun for the limit check
+              if (isWeekend && stats.weekend >= person.weekendLimit) return false;
 
               // 7. Weekend Balance (Sat vs Sun)
               if (isSat) {
@@ -188,8 +189,9 @@ export class Scheduler {
               // E. Feature: Prevent "Günaşırı" (Every other day) patterns
               // If person worked d-2 or d+2, add penalty to encourage spacing
               if (this.config.preventEveryOtherDay) {
-                  if (this.hasShiftOnDay(dayAssignmentsMap, day - 2, person.id)) score += 2500;
-                  if (this.hasShiftOnDay(dayAssignmentsMap, day + 2, person.id)) score += 2500;
+                  // Increased penalty from 2500 to 4000 to prioritize this over minor grouping issues
+                  if (this.hasShiftOnDay(dayAssignmentsMap, day - 2, person.id)) score += 4000;
+                  if (this.hasShiftOnDay(dayAssignmentsMap, day + 2, person.id)) score += 4000;
               }
 
               // F. Group Balance Strategy (Day General)
@@ -231,7 +233,8 @@ export class Scheduler {
             if (service.isEmergency) stats.emergency++;
             else stats.service++;
             
-            if (isFriSatSun) stats.weekend++;
+            // Note: We track 'weekend' count for Sat/Sun only now for limit purposes
+            if (isWeekend) stats.weekend++;
             if (isSat) stats.saturday++;
             if (isSun) stats.sunday++;
 
