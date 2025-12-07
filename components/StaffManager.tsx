@@ -27,7 +27,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const backupInputRef = useRef<HTMLInputElement>(null);
     const [newStaff, setNewStaff] = useState<Partial<Staff>>({ 
-        name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: []
+        name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true
     });
 
     const [dateModal, setDateModal] = useState<{ isOpen: boolean, staffId: string, type: 'off' | 'request' } | null>(null);
@@ -36,14 +36,23 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
     const handleAddStaff = () => {
         if (!newStaff.name) return;
-        setStaff([...staff, { ...newStaff, id: Date.now().toString() } as Staff]);
-        setNewStaff({ name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [] });
+        setStaff([...staff, { ...newStaff, id: Date.now().toString(), isActive: true } as Staff]);
+        setNewStaff({ name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true });
     };
 
     const handleDeleteStaff = (id: string) => {
         if(window.confirm("Personeli silmek istediğinize emin misiniz?")) {
             setStaff(staff.filter(s => s.id !== id));
         }
+    };
+    
+    const toggleStaffActive = (id: string) => {
+        setStaff(staff.map(s => {
+            if (s.id === id) {
+                return { ...s, isActive: !s.isActive };
+            }
+            return s;
+        }));
     };
 
     const updateRoleConfig = (role: number, field: keyof RoleConfig, value: number) => {
@@ -135,14 +144,14 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
             {/* Role Configs */}
             {staff.length > 0 && (
-                <Card className={`p-6 border transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800' : 'bg-indigo-50/30 border-indigo-100'}`}>
+                <Card className={`p-6 border transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800' : 'bg-indigo-50/30 border-indigo-100'}`}>
                     <div className={`mb-4 flex items-center gap-2 ${isBlackAndWhite ? 'text-white' : 'text-indigo-800'}`}>
                         {ICONS.Settings}
                         <h3 className="font-bold text-lg">Kıdem Bazlı Toplu Ayarlar</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {uniqueRoles.map(role => (
-                            <div key={role} className={`p-5 rounded-xl shadow-sm border transition-all hover:shadow-md flex flex-col gap-4 ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white' : 'bg-white border-gray-200'}`}>
+                            <div key={role} className={`p-5 rounded-xl shadow-sm border transition-all flex flex-col gap-4 hover-lift ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white' : 'bg-white border-gray-200'}`}>
                                 <div className="flex justify-between items-center border-b pb-2 border-gray-100/10">
                                     <h4 className="font-bold text-lg">Kıdem {role}</h4>
                                     <Badge color="gray">{staff.filter(s => s.role === role).length} Kişi</Badge>
@@ -188,7 +197,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             )}
 
             {/* Manual Add Form */}
-            <Card className={`p-6 border-l-4 transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
+            <Card className={`p-6 border-l-4 transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-3">
                         <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>AD SOYAD</label>
@@ -223,15 +232,45 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             {/* Staff List */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {staff.map(person => (
-                    <Card key={person.id} className={`p-4 relative group hover:shadow-lg transition-all border-l-4 ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 !text-white border-l-indigo-500' : 'border-l-indigo-500'}`}>
+                    <Card 
+                        key={person.id} 
+                        className={`p-4 relative group transition-all border-l-4 hover-lift ${
+                            isBlackAndWhite 
+                            ? `!bg-slate-900 !border-slate-800 !text-white ${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-slate-700 opacity-60'}` 
+                            : `${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-gray-300 bg-gray-50 opacity-60'}`
+                        }`}
+                    >
+                        {/* Modern Toggle Switch */}
+                        <div className="absolute top-3 left-3 flex items-center" title={person.isActive !== false ? "Nöbete Dahil" : "Nöbet Dışı"}>
+                            <button 
+                                onClick={() => toggleStaffActive(person.id)}
+                                className={`w-10 h-5 flex items-center rounded-full p-1 transition-all duration-300 ${
+                                    person.isActive !== false 
+                                    ? (isBlackAndWhite ? 'bg-indigo-600' : 'bg-indigo-500') 
+                                    : (isBlackAndWhite ? 'bg-slate-700' : 'bg-gray-300')
+                                }`}
+                            >
+                                <div 
+                                    className={`bg-white w-3.5 h-3.5 rounded-full shadow-md transform transition-transform duration-300 ${
+                                        person.isActive !== false ? 'translate-x-4.5' : ''
+                                    }`} 
+                                    style={{ transform: person.isActive !== false ? 'translateX(1.2rem)' : 'translateX(0)' }}
+                                />
+                            </button>
+                        </div>
+
                         <button onClick={() => handleDeleteStaff(person.id)} className={`absolute top-3 right-3 transition-colors ${isBlackAndWhite ? 'text-gray-500 hover:text-red-400' : 'text-gray-300 hover:text-red-500'}`}>{ICONS.Trash}</button>
                         
-                        <div className="flex items-center gap-3 mb-3">
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${isBlackAndWhite ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
+                        <div className="flex items-center gap-3 mb-3 ml-8">
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                                 isBlackAndWhite 
+                                 ? (person.isActive !== false ? 'bg-indigo-900 text-indigo-200' : 'bg-slate-800 text-slate-500') 
+                                 : (person.isActive !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-400')
+                             }`}>
                                  {person.name.charAt(0)}
                              </div>
                              <div>
-                                 <h4 className="font-bold">{person.name}</h4>
+                                 <h4 className={`font-bold ${person.isActive === false && 'line-through'}`}>{person.name}</h4>
                                  <div className="flex gap-2 text-xs opacity-70">
                                      <span>Kıdem: {person.role}</span>
                                      <span>•</span>
@@ -240,26 +279,26 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                              </div>
                         </div>
 
-                        <div className={`grid grid-cols-3 gap-2 text-center text-xs p-2 rounded-lg mb-4 ${isBlackAndWhite ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                        <div className={`grid grid-cols-3 gap-2 text-center text-xs p-2 rounded-lg mb-4 ${isBlackAndWhite ? 'bg-slate-800' : 'bg-white shadow-sm border border-gray-100'}`}>
                              <div>
-                                 <div className="font-bold text-indigo-500">{person.quotaService}</div>
+                                 <div className={`font-bold ${person.isActive !== false ? 'text-indigo-500' : 'text-gray-400'}`}>{person.quotaService}</div>
                                  <div className="opacity-60">Servis</div>
                              </div>
                              <div>
-                                 <div className="font-bold text-rose-500">{person.quotaEmergency}</div>
+                                 <div className={`font-bold ${person.isActive !== false ? 'text-rose-500' : 'text-gray-400'}`}>{person.quotaEmergency}</div>
                                  <div className="opacity-60">Acil</div>
                              </div>
                              <div>
-                                 <div className="font-bold text-orange-500">{person.weekendLimit}</div>
+                                 <div className={`font-bold ${person.isActive !== false ? 'text-orange-500' : 'text-gray-400'}`}>{person.weekendLimit}</div>
                                  <div className="opacity-60">H.Sonu</div>
                              </div>
                         </div>
 
                         <div className="flex gap-2">
-                             <Button variant="secondary" onClick={() => openDateModal(person.id, 'off')} className={`flex-1 text-xs h-8 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
+                             <Button variant="secondary" onClick={() => openDateModal(person.id, 'off')} disabled={person.isActive === false} className={`flex-1 text-xs h-8 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
                                  İzin ({person.offDays.length})
                              </Button>
-                             <Button variant="secondary" onClick={() => openDateModal(person.id, 'request')} className={`flex-1 text-xs h-8 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
+                             <Button variant="secondary" onClick={() => openDateModal(person.id, 'request')} disabled={person.isActive === false} className={`flex-1 text-xs h-8 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
                                  İstek ({person.requestedDays.length})
                              </Button>
                         </div>

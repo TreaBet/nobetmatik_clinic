@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ScheduleResult, Service, Staff, DaySchedule } from '../types';
+import { ScheduleResult, Service, Staff, DaySchedule, Group } from '../types';
 import { Card, Button } from './ui';
 import { ICONS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Edit3, Save, X, CheckCircle2, Share2, Clipboard, GripVertical, Pencil, RotateCcw, Search, AlertTriangle, Calendar as CalendarIcon, Download, Link as LinkIcon } from 'lucide-react';
+import { Edit3, Save, X, CheckCircle2, Share2, Clipboard, GripVertical, Pencil, RotateCcw, Search, AlertTriangle, Calendar as CalendarIcon, Download, Link as LinkIcon, Filter, User } from 'lucide-react';
 
 interface ScheduleViewerProps {
     result: ScheduleResult;
@@ -25,6 +25,10 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
     const [isEditing, setIsEditing] = useState(false);
     const [editingSlot, setEditingSlot] = useState<{day: number, serviceId: string, currentStaffId: string} | null>(null);
     const [searchTerm, setSearchTerm] = useState(""); // Search in dropdown
+
+    // --- Filtering State ---
+    const [filterName, setFilterName] = useState("");
+    const [filterGroup, setFilterGroup] = useState<Group | 'Hepsi'>('Hepsi');
 
     // --- History / Undo State ---
     const [history, setHistory] = useState<DaySchedule[][]>([]);
@@ -146,8 +150,7 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
             ...dayData.assignments[targetAssignmentIndex],
             staffId: isRemoving ? 'EMPTY' : newStaffMember!.id,
             staffName: isRemoving ? 'BOŞ' : newStaffMember!.name,
-            role: isRemoving ? 0 : newStaffMember!.role,
-            group: isRemoving ? 'Genel' : newStaffMember!.group
+            role: isRemoving ? 0 : newStaffMember!.group
         };
 
         dayData.assignments[targetAssignmentIndex] = updatedAssignment as any;
@@ -262,7 +265,6 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
         if(!isEditing) return;
         setDragData({ day, serviceId, staffId });
         e.dataTransfer.effectAllowed = 'move';
-        // Optional: Set custom drag image if needed
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -273,13 +275,12 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
 
     const handleDragEnter = (e: React.DragEvent, day: number, serviceId: string, staffId: string) => {
         if(!isEditing || !dragData) return;
-        // Don't highlight self
         if (dragData.day === day && dragData.serviceId === serviceId && dragData.staffId === staffId) return;
         setDragOverTarget({ day, serviceId, staffId });
     };
 
     const handleDragLeave = (e: React.DragEvent) => {
-       // Typically handled by next Enter, or Drop.
+       // handled by next Enter
     };
 
     const handleDrop = (e: React.DragEvent, targetDay: number, targetServiceId: string, targetStaffId: string) => {
@@ -364,35 +365,48 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
             : "hover:bg-gray-50 text-gray-700 border border-transparent";
     }
 
+    // Determine colors for Unfilled Slots Card
+    const unfilledCount = result.unfilledSlots;
+    const isSuccess = unfilledCount === 0;
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Scorecard */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover:shadow-md ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-emerald-500 text-white' : 'border-l-emerald-500'}`}>
+                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover-lift ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-emerald-500 text-white' : 'border-l-emerald-500'}`}>
                      <div className={`text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-60 mb-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Toplam Atama</div>
                      <div className={`text-2xl md:text-3xl font-bold ${isBlackAndWhite ? 'text-emerald-400' : 'text-gray-900'}`}>
                        {result.schedule.reduce((acc, day) => acc + day.assignments.filter(a => a.staffId !== 'EMPTY').length, 0)}
                      </div>
                   </Card>
-                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover:shadow-md ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-rose-500 text-white' : 'border-l-rose-500'}`}>
+                  
+                  {/* UNFILLED SLOTS CARD - DYNAMIC COLOR */}
+                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover-lift ${isBlackAndWhite 
+                        ? (isSuccess ? 'bg-slate-900 border-slate-700 border-l-emerald-500 text-white' : 'bg-slate-900 border-slate-700 border-l-rose-500 text-white') 
+                        : (isSuccess ? 'border-l-emerald-500' : 'border-l-rose-500')}`}>
                      <div className={`text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-60 mb-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Boş Kalan</div>
-                     <div className={`text-2xl md:text-3xl font-bold ${isBlackAndWhite ? 'text-rose-400' : 'text-rose-600'}`}>
+                     <div className={`text-2xl md:text-3xl font-bold ${
+                         isBlackAndWhite 
+                            ? (isSuccess ? 'text-emerald-400' : 'text-rose-400') 
+                            : (isSuccess ? 'text-emerald-600' : 'text-rose-600')
+                     }`}>
                        {result.unfilledSlots}
                      </div>
                   </Card>
-                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover:shadow-md ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-indigo-500 text-white' : 'border-l-indigo-500'}`}>
+
+                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover-lift ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-indigo-500 text-white' : 'border-l-indigo-500'}`}>
                      <div className={`text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-60 mb-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Adalet Puanı (SD)</div>
                      <div className="flex items-end gap-2">
                         <div className={`text-2xl md:text-3xl font-bold ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-600'}`}>{fairnessScore.stdDev}</div>
                      </div>
                   </Card>
-                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover:shadow-md ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-blue-500 text-white' : 'border-l-blue-500'}`}>
+                  <Card className={`p-4 md:p-5 border-l-4 shadow-sm transition-all hover-lift ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 border-l-blue-500 text-white' : 'border-l-blue-500'}`}>
                      <div className={`text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-60 mb-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>İstek Karşılama</div>
                      <div className={`text-2xl md:text-3xl font-bold ${isBlackAndWhite ? 'text-blue-400' : 'text-blue-600'}`}>%{fairnessScore.reqRate}</div>
                   </Card>
             </div>
 
-            {/* Actions Bar - READ ONLY CHECK */}
+            {/* Actions Bar */}
             <div className={`flex flex-col sm:flex-row justify-between items-center p-3 rounded-xl border shadow-sm gap-3 ${isBlackAndWhite ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button variant="secondary" onClick={handleDownload} className={`text-xs h-9 flex-1 sm:flex-none ${isBlackAndWhite ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : ''}`}>
@@ -401,7 +415,6 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                     <Button variant="secondary" onClick={() => setWhatsAppModalOpen(true)} className={`text-xs h-9 flex-1 sm:flex-none ${isBlackAndWhite ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : ''}`}>
                        <Share2 className="w-4 h-4" /> Paylaş & Takvim
                     </Button>
-                    {/* Share Link Button - Only show if onShare prop is present and NOT in read only mode */}
                     {!isReadOnly && onShare && (
                         <Button variant="secondary" onClick={onShare} className={`text-xs h-9 flex-1 sm:flex-none text-indigo-700 bg-indigo-50 border-indigo-200 hover:bg-indigo-100 ${isBlackAndWhite ? 'bg-slate-800 text-indigo-300 border-slate-700 hover:bg-slate-700' : ''}`}>
                             <LinkIcon className="w-4 h-4 mr-1" /> Link Paylaş
@@ -414,13 +427,48 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                     )}
                  </div>
                  
-                 {/* Hide Edit Button if Read Only */}
                  {!isReadOnly && (
                      <Button variant="secondary" onClick={() => setIsEditing(!isEditing)} className={`text-xs h-9 w-full sm:w-auto ${isEditing ? (isBlackAndWhite ? 'bg-indigo-900/50 text-indigo-200 border-indigo-500' : 'bg-indigo-50 text-indigo-800 border-indigo-200') : (isBlackAndWhite ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : '')}`}>
                         {isEditing ? <Save className="w-3.5 h-3.5"/> : <Edit3 className="w-3.5 h-3.5"/>}
                         {isEditing ? 'Düzenlemeyi Bitir' : 'Manuel Düzenle'}
                     </Button>
                  )}
+            </div>
+            
+            {/* Filter Bar */}
+            <div className={`p-3 rounded-xl border shadow-sm flex flex-col md:flex-row gap-3 items-center ${isBlackAndWhite ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+                <div className={`text-sm font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <Filter className="w-4 h-4" /> Filtrele:
+                </div>
+                <div className="flex-1 w-full relative">
+                    <User className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isBlackAndWhite ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <input 
+                        type="text" 
+                        placeholder="Personel Adı ile Ara..." 
+                        value={filterName}
+                        onChange={(e) => setFilterName(e.target.value)}
+                        className={`w-full h-9 pl-9 pr-3 rounded-lg text-sm border focus:ring-2 focus:ring-indigo-500 outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-200 text-gray-800'}`}
+                    />
+                </div>
+                <div className="w-full md:w-48">
+                    <select 
+                        value={filterGroup} 
+                        onChange={(e) => setFilterGroup(e.target.value as Group | 'Hepsi')}
+                        className={`w-full h-9 px-3 rounded-lg text-sm border focus:ring-2 focus:ring-indigo-500 outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`}
+                    >
+                        <option value="Hepsi">Tüm Gruplar</option>
+                        <option value="A">A Grubu</option>
+                        <option value="B">B Grubu</option>
+                        <option value="C">C Grubu</option>
+                        <option value="D">D Grubu</option>
+                        <option value="Genel">Genel</option>
+                    </select>
+                </div>
+                {(filterName || filterGroup !== 'Hepsi') && (
+                    <Button variant="ghost" onClick={() => { setFilterName(''); setFilterGroup('Hepsi'); }} className={`h-9 text-xs px-2 ${isBlackAndWhite ? 'text-rose-400 hover:bg-rose-900/20' : 'text-rose-600 hover:bg-rose-50'}`}>
+                        Temizle
+                    </Button>
+                )}
             </div>
 
             {/* Logs */}
@@ -461,85 +509,100 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
             </Card>
 
             {/* Main Schedule Table */}
-            <Card className={`report-table-container shadow-lg border-0 overflow-hidden ${isBlackAndWhite ? 'bg-slate-900' : ''}`}>
+            <Card className={`shadow-lg border-0 ${isBlackAndWhite ? 'bg-slate-900' : ''}`}>
+                <div className="report-table-container">
                   <table className="report-table w-full">
                     <thead>
                       <tr>
-                        <th className={`sticky-col w-20 md:w-28 shadow-lg z-30 text-center ${isBlackAndWhite ? 'bg-slate-950 text-white border-b border-slate-700' : 'bg-gray-800 text-white'}`}>Gün</th>
+                        <th className={`sticky-col w-20 md:w-24 shadow-sm z-30 text-center ${isBlackAndWhite ? 'bg-slate-950 text-white border-b border-slate-700' : 'bg-white text-gray-800'}`}>Gün</th>
                         {services.map(s => (
                           <th key={s.id} className={`min-w-[140px] md:min-w-[160px] ${isBlackAndWhite ? 'bg-slate-950 text-white border-b border-slate-700' : ''}`}>
-                              <div className="truncate font-bold text-sm">{s.name}</div>
-                              <div className="text-[10px] font-normal opacity-70 mt-0.5">Min: {s.minDailyCount} Personel</div>
+                              <div className="truncate">{s.name}</div>
+                              <div className="text-[10px] font-normal opacity-70 mt-0.5">Min: {s.minDailyCount}</div>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {result.schedule.map((day) => (
-                        <tr key={day.day} className={day.isWeekend ? 'is-weekend' : ''}>
-                          <td className={`sticky-col p-0 border-r ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 text-slate-200' : 'border-gray-200'}`} style={{ height: '1px' }}>
-                            <div className="flex flex-col items-center justify-center h-full min-h-[70px] py-2 bg-inherit w-full">
-                              <span className={`text-xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-700'}`}>{day.day}</span>
-                              <span className={`text-[10px] uppercase font-bold px-1.5 rounded ${day.isWeekend ? (isBlackAndWhite ? 'bg-indigo-900/40 text-indigo-200' : 'bg-orange-100 text-orange-700') : (isBlackAndWhite ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500')}`}>
-                                {new Date(year, month, day.day).toLocaleString('tr-TR', {weekday: 'short'})}
-                              </span>
-                            </div>
-                          </td>
-                          {services.map(service => {
-                            const assignments = day.assignments.filter(a => a.serviceId === service.id);
-                            return (
-                              <td key={service.id} 
-                                className={`align-top h-full p-1.5 ${isBlackAndWhite ? 'border-slate-700' : ''}`}
-                                style={{ height: '1px' }}
-                                onDragOver={isEditing ? handleDragOver : undefined}
-                              >
-                                <div className="flex flex-col gap-2 min-h-[70px] h-full justify-start">
-                                    {assignments.length > 0 ? assignments.map((a, idx) => {
-                                      let badgeClass = 'slot-normal';
-                                      if (a.staffId === 'EMPTY') badgeClass = 'slot-empty';
-                                      else if (a.isEmergency) badgeClass = 'slot-emergency';
-                                      
-                                      const isSelected = editingSlot && editingSlot.day === day.day && editingSlot.serviceId === service.id && editingSlot.currentStaffId === a.staffId;
-                                      const isDraggingItem = dragData && dragData.day === day.day && dragData.serviceId === service.id && dragData.staffId === a.staffId;
-                                      const isDropTarget = dragOverTarget && dragOverTarget.day === day.day && dragOverTarget.serviceId === service.id && dragOverTarget.staffId === a.staffId;
+                      {result.schedule.map((day, index) => {
+                          const isHoliday = day.isHoliday;
+                          // Zebra Striping Logic: Apply only if not weekend/holiday
+                          const isZebra = !day.isWeekend && !isHoliday && index % 2 === 0;
 
-                                      return (
-                                        <div 
-                                          key={idx} 
-                                          draggable={isEditing}
-                                          onDragStart={isEditing ? (e) => handleDragStart(e, day.day, service.id, a.staffId) : undefined}
-                                          onDrop={isEditing ? (e) => handleDrop(e, day.day, service.id, a.staffId) : undefined}
-                                          onDragEnter={isEditing ? (e) => handleDragEnter(e, day.day, service.id, a.staffId) : undefined}
-                                          className={`slot-badge ${badgeClass} ${isSelected ? 'slot-selected' : ''} ${isDraggingItem ? 'slot-dragging' : ''} ${isDropTarget ? 'slot-drag-over' : ''} ${isEditing ? 'clickable relative pr-7' : ''} flex justify-between items-center group/slot flex-1`}
-                                          onClick={(e) => {
-                                              if (isEditing) {
-                                                  e.stopPropagation();
-                                                  setEditingSlot({day: day.day, serviceId: service.id, currentStaffId: a.staffId});
-                                              }
-                                          }}
-                                        >
-                                          <div className="flex items-center gap-2 overflow-hidden w-full">
-                                             <div className={`dot w-1.5 h-1.5 rounded-full shrink-0 ${a.isEmergency ? 'bg-white' : (isBlackAndWhite ? 'bg-indigo-400' : 'bg-indigo-500')}`}></div>
-                                             <span className="font-semibold block truncate text-sm select-none">{a.staffName}</span>
-                                          </div>
-                                          {isEditing && (
-                                              <div className="flex items-center gap-1 absolute right-1">
-                                                  <GripVertical className="w-3.5 h-3.5 text-current opacity-50 cursor-move" />
-                                              </div>
-                                          )}
-                                        </div>
-                                      );
-                                    }) : (
-                                      <span className={`text-center text-xs block py-2 border-2 border-dashed rounded-lg h-full flex items-center justify-center select-none ${isBlackAndWhite ? 'border-slate-700 text-slate-600' : 'border-gray-100 text-gray-300'}`}>-</span>
-                                    )}
-                                  </div>
+                          return (
+                            <tr key={day.day} className={`${day.isWeekend || isHoliday ? 'is-weekend' : ''} ${isZebra ? 'zebra-row' : ''}`}>
+                              <td className={`sticky-col p-0 border-r ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 text-slate-200' : 'border-gray-100'}`} style={{ height: '1px' }}>
+                                <div className={`flex flex-col items-center justify-center h-full min-h-[50px] py-2 w-full ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/20' : 'bg-red-50') : 'bg-inherit'}`}>
+                                  <span className={`text-xl font-bold leading-none tracking-tight ${isHoliday ? 'text-red-500' : (isBlackAndWhite ? 'text-white' : 'text-gray-800')}`}>{day.day}</span>
+                                  <span className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${isHoliday ? 'text-red-400' : (day.isWeekend ? (isBlackAndWhite ? 'text-indigo-300' : 'text-indigo-600') : (isBlackAndWhite ? 'text-slate-500' : 'text-gray-400'))}`}>
+                                    {new Date(year, month, day.day).toLocaleString('tr-TR', {weekday: 'short'})}
+                                  </span>
+                                </div>
                               </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
+                              {services.map(service => {
+                                const assignments = day.assignments.filter(a => a.serviceId === service.id);
+                                return (
+                                  <td key={service.id} 
+                                    className={`align-top h-full p-2 border-b ${isBlackAndWhite ? 'border-slate-700' : 'border-gray-100'} ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/10' : 'bg-red-50/30') : ''}`}
+                                    style={{ height: '1px' }}
+                                    onDragOver={isEditing ? handleDragOver : undefined}
+                                  >
+                                    <div className="flex flex-col gap-1.5 min-h-[40px] h-full justify-start">
+                                        {assignments.length > 0 ? assignments.map((a, idx) => {
+                                          let textClass = 'text-normal';
+                                          if (a.staffId === 'EMPTY') textClass = 'text-empty';
+                                          else if (a.isEmergency) textClass = 'text-emergency';
+                                          
+                                          const isSelected = editingSlot && editingSlot.day === day.day && editingSlot.serviceId === service.id && editingSlot.currentStaffId === a.staffId;
+                                          const isDraggingItem = dragData && dragData.day === day.day && dragData.serviceId === service.id && dragData.staffId === a.staffId;
+                                          const isDropTarget = dragOverTarget && dragOverTarget.day === day.day && dragOverTarget.serviceId === service.id && dragOverTarget.staffId === a.staffId;
+                                          
+                                          // FILTER LOGIC
+                                          const nameMatch = filterName === "" || a.staffName.toLowerCase().includes(filterName.toLowerCase());
+                                          const groupMatch = filterGroup === 'Hepsi' || a.group === filterGroup;
+                                          const isDimmed = !nameMatch || !groupMatch;
+
+                                          const dotColor = a.isEmergency 
+                                              ? 'bg-rose-500 shadow-sm' 
+                                              : (isBlackAndWhite ? 'bg-indigo-400' : 'bg-indigo-600');
+
+                                          return (
+                                            <div 
+                                              key={idx} 
+                                              draggable={isEditing}
+                                              onDragStart={isEditing ? (e) => handleDragStart(e, day.day, service.id, a.staffId) : undefined}
+                                              onDrop={isEditing ? (e) => handleDrop(e, day.day, service.id, a.staffId) : undefined}
+                                              onDragEnter={isEditing ? (e) => handleDragEnter(e, day.day, service.id, a.staffId) : undefined}
+                                              className={`slot-list-item ${textClass} ${isSelected ? 'slot-selected' : ''} ${isDraggingItem ? 'slot-dragging' : ''} ${isDropTarget ? 'slot-drag-over' : ''} ${isEditing ? 'clickable relative pr-7' : ''} ${isDimmed ? 'opacity-20 grayscale' : ''} group/slot`}
+                                              onClick={(e) => {
+                                                  if (isEditing) {
+                                                      e.stopPropagation();
+                                                      setEditingSlot({day: day.day, serviceId: service.id, currentStaffId: a.staffId});
+                                                  }
+                                              }}
+                                            >
+                                               <div className={`w-2 h-2 rounded-full shrink-0 ${a.staffId === 'EMPTY' ? 'hidden' : dotColor}`}></div>
+                                               <span className="truncate block select-none">{a.staffName}</span>
+                                              {isEditing && (
+                                                  <div className="flex items-center gap-1 absolute right-1">
+                                                      <GripVertical className="w-3.5 h-3.5 text-current opacity-50 cursor-move" />
+                                                  </div>
+                                              )}
+                                            </div>
+                                          );
+                                        }) : (
+                                          <span className={`text-center text-xs block py-2 border border-dashed rounded h-full flex items-center justify-center select-none opacity-40 ${isBlackAndWhite ? 'border-slate-700 text-slate-600' : 'border-gray-200 text-gray-300'}`}>-</span>
+                                        )}
+                                      </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                      })}
                     </tbody>
                   </table>
+                </div>
             </Card>
 
             {/* Styled Searchable Dropdown for Editing */}
@@ -604,8 +667,8 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                                             <div className="flex flex-col">
                                                 <span className={`text-sm font-semibold ${isActive ? (isBlackAndWhite ? 'text-indigo-100' : 'text-indigo-800') : (isBlackAndWhite ? 'text-slate-200' : 'text-gray-700')}`}>{s.name}</span>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                     <span className={`text-[10px] px-1.5 rounded border ${isBlackAndWhite ? 'border-slate-600 text-slate-400' : 'border-gray-200 text-gray-500'}`}>KD: {s.role}</span>
-                                                     <span className={`text-[10px] ${isBlackAndWhite ? 'text-slate-500' : 'text-gray-400'}`}>{s.group} Grubu</span>
+                                                     <span className={`text-xs px-1.5 rounded border ${isBlackAndWhite ? 'border-slate-600 text-slate-400' : 'border-gray-200 text-gray-500'}`}>KD: {s.role}</span>
+                                                     <span className={`text-xs ${isBlackAndWhite ? 'text-slate-500' : 'text-gray-400'}`}>{s.group} Grubu</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -630,31 +693,43 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
                     <div className={`rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] ${isBlackAndWhite ? 'bg-slate-900 text-white border border-slate-700' : 'bg-white'}`}>
                         <div className={`p-4 border-b flex justify-between items-center shrink-0 ${isBlackAndWhite ? 'bg-slate-950 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                            <h3 className="font-bold flex items-center gap-2"><Share2 className="w-5 h-5 text-green-600"/> Paylaş & Takvim</h3>
-                            <button onClick={() => setWhatsAppModalOpen(false)} className={`p-1 rounded hover:bg-black/10`}><X className="w-5 h-5" /></button>
+                            <h3 className="font-bold flex items-center gap-2"><Share2 className="w-5 h-5" /> Nöbet Paylaşımı</h3>
+                            <button onClick={() => setWhatsAppModalOpen(false)} className="p-1.5 rounded-full hover:bg-black/10 transition-colors"><X className="w-5 h-5" /></button>
                         </div>
-                        <div className="p-4 overflow-y-auto">
-                            <p className={`text-sm mb-4 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Personelin yanındaki butonları kullanarak nöbet listesini kopyalayabilir veya takvim dosyası (.ics) indirebilirsiniz.</p>
-                            <div className="space-y-2">
-                                {staff.map(s => (
-                                    <div key={s.id} className={`flex justify-between items-center p-3 border rounded-xl transition-colors ${isBlackAndWhite ? 'border-slate-700 hover:bg-slate-800' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                        <span className="font-bold text-sm truncate mr-2">{s.name}</span>
-                                        <div className="flex gap-2">
-                                            {/* Button bileşeni 'title' prop'unu desteklemediği için kapsayıcı div'e 'title' verildi */}
-                                            <div title="Takvime Ekle">
-                                                <Button variant="secondary" onClick={() => generateICSFile(s.id)} className={`text-xs py-1.5 h-8 px-2 ${isBlackAndWhite ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : ''}`}>
-                                                    <CalendarIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline ml-1">Takvim</span>
-                                                </Button>
-                                            </div>
-                                            <div title="Mesaj Kopyala">
-                                                <Button variant="secondary" onClick={() => copyWhatsAppMessage(s.id)} className={`text-xs py-1.5 h-8 px-2 ${isBlackAndWhite ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : ''}`}>
-                                                    <Clipboard className="w-3.5 h-3.5" /> <span className="hidden sm:inline ml-1">Mesaj</span>
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className={`p-6 overflow-y-auto ${isBlackAndWhite ? 'bg-slate-900' : 'bg-white'}`}>
+                             <p className={`text-sm mb-4 ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
+                                 Personel seçerek WhatsApp için nöbet listesi metnini kopyalayabilir veya takvim dosyası (ICS) indirebilirsiniz.
+                             </p>
+                             <div className="space-y-2">
+                                 {staff.map(s => {
+                                     // Filter staff who actually have shifts
+                                     const hasShifts = result.schedule.some(d => d.assignments.some(a => a.staffId === s.id));
+                                     if (!hasShifts) return null;
+                                     
+                                     return (
+                                         <div key={s.id} className={`flex items-center justify-between p-3 rounded-lg border ${isBlackAndWhite ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                                             <div className="flex items-center gap-3">
+                                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isBlackAndWhite ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>{s.name.charAt(0)}</div>
+                                                 <div>
+                                                     <div className={`font-bold text-sm ${isBlackAndWhite ? 'text-white' : 'text-gray-900'}`}>{s.name}</div>
+                                                     <div className={`text-xs ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>{s.group} Grubu • Kd. {s.role}</div>
+                                                 </div>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <Button variant="secondary" onClick={() => copyWhatsAppMessage(s.id)} className={`h-8 text-xs px-3 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
+                                                     <Clipboard className="w-3.5 h-3.5 mr-1" /> Kopyala
+                                                 </Button>
+                                                 <Button variant="secondary" onClick={() => generateICSFile(s.id)} className={`h-8 text-xs px-3 ${isBlackAndWhite ? '!bg-slate-700 !border-slate-600 text-white hover:!bg-slate-600' : ''}`}>
+                                                     <CalendarIcon className="w-3.5 h-3.5 mr-1" /> Takvim
+                                                 </Button>
+                                             </div>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
+                        </div>
+                        <div className={`p-4 border-t shrink-0 flex justify-end ${isBlackAndWhite ? 'bg-slate-950 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                             <Button onClick={() => setWhatsAppModalOpen(false)} className={isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}>Kapat</Button>
                         </div>
                     </div>
                 </div>
