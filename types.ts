@@ -1,4 +1,5 @@
 
+
 export type Role = number; // 1, 2, 3, 4 etc.
 export type Group = 'A' | 'B' | 'C' | 'D' | 'Genel';
 
@@ -12,6 +13,7 @@ export interface Staff {
   weekendLimit: number; // Max weekend shifts
   offDays: number[]; // Days of month they cannot work
   requestedDays: number[]; // Days they specifically want to work
+  isActive: boolean; // Determines if included in schedule generation
 }
 
 export interface RoleConfig {
@@ -45,6 +47,7 @@ export interface DaySchedule {
   day: number;
   assignments: ShiftAssignment[];
   isWeekend: boolean;
+  isHoliday: boolean; // Added for holiday support
 }
 
 export interface Stats {
@@ -62,6 +65,7 @@ export interface ScheduleResult {
   unfilledSlots: number;
   logs: string[]; // Error logs
   stats: Stats[];
+  fitness?: number; // Internal score for GA
 }
 
 export interface SchedulerConfig {
@@ -70,4 +74,7 @@ export interface SchedulerConfig {
   maxRetries: number;
   randomizeOrder: boolean; // Process days in random order
   preventEveryOtherDay: boolean; // Avoid Day-2 / Day+2 patterns
+  holidays: number[]; // Days of month considered public holidays
+  useFatigueModel: boolean; // Enable dynamic stress/fatigue calculations
+  useGeneticAlgorithm: boolean; // Enable evolutionary solver
 }
