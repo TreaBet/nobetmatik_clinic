@@ -12,6 +12,9 @@ export interface AppData {
         year: number;
         randomizeDays: boolean;
         preventEveryOther: boolean;
+        holidays?: number[];
+        useFatigueModel?: boolean;
+        useGeneticAlgorithm?: boolean;
     }
 }
 
@@ -19,10 +22,18 @@ export const exportToJSON = (
     staff: Staff[],
     services: Service[],
     roleConfigs: Record<number, RoleConfig>,
-    config: { month: number; year: number; randomizeDays: boolean; preventEveryOther: boolean }
+    config: { 
+        month: number; 
+        year: number; 
+        randomizeDays: boolean; 
+        preventEveryOther: boolean;
+        holidays: number[];
+        useFatigueModel: boolean;
+        useGeneticAlgorithm: boolean;
+    }
 ) => {
     const data: AppData = {
-        version: "2.0",
+        version: "2.1",
         timestamp: new Date().toISOString(),
         staff,
         services,
