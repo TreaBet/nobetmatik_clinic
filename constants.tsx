@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Users, Calendar, Settings, ShieldCheck, Download, Trash2, Plus, UserPlus, FileSpreadsheet, AlertTriangle, CheckSquare, Heart, Upload, FileDown, Info } from 'lucide-react';
 
@@ -22,15 +21,15 @@ export const ICONS = {
 };
 
 export const MOCK_STAFF = [
-  { id: '1', name: 'Dr. Ahmet Yılmaz', role: 1, group: 'A', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [] },
-  { id: '2', name: 'Dr. Ayşe Demir', role: 1, group: 'B', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [5, 6], requestedDays: [] },
-  { id: '3', name: 'Dr. Mehmet Kaya', role: 2, group: 'A', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [15, 16] },
-  { id: '4', name: 'Dr. Zeynep Çelik', role: 2, group: 'C', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [] },
-  { id: '5', name: 'Dr. Ali Vural', role: 3, group: 'B', quotaService: 4, quotaEmergency: 6, weekendLimit: 4, offDays: [], requestedDays: [] },
-  { id: '6', name: 'Dr. Elif Şahin', role: 3, group: 'C', quotaService: 4, quotaEmergency: 6, weekendLimit: 4, offDays: [], requestedDays: [] },
-  { id: '7', name: 'Dr. Burak Can', role: 1, group: 'D', quotaService: 4, quotaEmergency: 2, weekendLimit: 1, offDays: [], requestedDays: [] },
-  { id: '8', name: 'Dr. Gamze Ak', role: 2, group: 'D', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [] },
-  { id: '9', name: 'Dr. Caner Erkin', role: 3, group: 'A', quotaService: 4, quotaEmergency: 7, weekendLimit: 4, offDays: [], requestedDays: [] },
+  { id: '1', name: 'Dr. Ahmet Yılmaz', role: 1, group: 'A', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true },
+  { id: '2', name: 'Dr. Ayşe Demir', role: 1, group: 'B', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [5, 6], requestedDays: [], isActive: true },
+  { id: '3', name: 'Dr. Mehmet Kaya', role: 2, group: 'A', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [15, 16], isActive: true },
+  { id: '4', name: 'Dr. Zeynep Çelik', role: 2, group: 'C', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [], isActive: true },
+  { id: '5', name: 'Dr. Ali Vural', role: 3, group: 'B', quotaService: 4, quotaEmergency: 6, weekendLimit: 4, offDays: [], requestedDays: [], isActive: true },
+  { id: '6', name: 'Dr. Elif Şahin', role: 3, group: 'C', quotaService: 4, quotaEmergency: 6, weekendLimit: 4, offDays: [], requestedDays: [], isActive: true },
+  { id: '7', name: 'Dr. Burak Can', role: 1, group: 'D', quotaService: 4, quotaEmergency: 2, weekendLimit: 1, offDays: [], requestedDays: [], isActive: true },
+  { id: '8', name: 'Dr. Gamze Ak', role: 2, group: 'D', quotaService: 6, quotaEmergency: 3, weekendLimit: 3, offDays: [], requestedDays: [], isActive: true },
+  { id: '9', name: 'Dr. Caner Erkin', role: 3, group: 'A', quotaService: 4, quotaEmergency: 7, weekendLimit: 4, offDays: [], requestedDays: [], isActive: true },
 ] as const;
 
 export const MOCK_SERVICES = [

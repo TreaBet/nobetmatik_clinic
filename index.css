@@ -40,6 +40,18 @@ body {
   animation: scaleIn 0.2s ease-out;
 }
 
+/* ================= HOVER LIFT EFFECT ================= */
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 10; /* Ensure it lifts above siblings */
+}
+
 /* ================= SCROLLBAR ================= */
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -70,7 +82,6 @@ body {
 }
 
 /* ================= COMPONENT DARK MODE OVERRIDES ================= */
-/* This section guarantees dark mode styles stick even if React loading order varies */
 
 .high-contrast .card-base {
     background-color: #0f172a !important; /* slate-900 */
@@ -142,46 +153,82 @@ body {
 /* ================= REPORT TABLE ================= */
 
 .report-table-container {
-  @apply overflow-x-auto rounded-xl bg-white transition-colors duration-300;
+  overflow-x: auto !important; /* Ensure scrolling works */
+  -webkit-overflow-scrolling: touch;
+  background-color: white;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-duration: 300ms;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .report-table {
-  @apply min-w-full divide-y divide-gray-200 border-collapse bg-white table-fixed transition-colors duration-300;
+  min-width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  table-layout: fixed;
 }
 
 .report-table thead th {
-  @apply bg-slate-800 text-white px-2 py-3 text-left text-xs font-bold uppercase tracking-wider sticky top-0 z-20 border-b border-gray-300;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: white;
+  color: #111827; /* gray-900 */
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  font-size: 0.75rem; /* text-xs for cleaner headers */
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .report-table tbody td {
-  @apply px-0 py-0 text-sm border-b border-gray-100 bg-white text-slate-900 transition-colors;
+  padding: 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f3f4f6;
+  background-color: white;
+  color: #0f172a;
+  vertical-align: top;
 }
 
+/* Sticky First Column */
 .report-table .sticky-col {
-  @apply sticky left-0 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)];
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  border-right: 1px solid #f3f4f6;
+  background-color: white;
 }
 
 .report-table tbody .sticky-col {
-  @apply bg-white text-slate-900 font-medium p-0;
+  background-color: white;
+  color: #0f172a;
+  font-weight: 500;
+  padding: 0;
 }
 
-.report-table thead .sticky-col {
-  @apply bg-slate-800 text-white z-30 shadow-none;
-}
-
+/* Weekend Styling */
 .report-table tr.is-weekend td {
-  @apply bg-orange-50/50;
+  background-color: #fafafa; 
 }
-
 .report-table tr.is-weekend .sticky-col {
-  @apply bg-orange-50;
+  background-color: #fafafa;
 }
 
+/* Zebra Styling (Weekdays only) */
+.report-table tr.zebra-row td,
+.report-table tr.zebra-row .sticky-col {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* Hover Effect */
 .report-table tbody tr:hover td {
-  background-color: #f8fafc;
+  background-color: #f1f5f9; /* slate-100 */
 }
 .report-table tbody tr:hover .sticky-col {
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
 }
 
 /* ================= DARK MODE TABLE OVERRIDES ================= */
@@ -205,7 +252,13 @@ body {
 
 .high-contrast .report-table tr.is-weekend td,
 .high-contrast .report-table tr.is-weekend .sticky-col {
-  @apply bg-slate-800/50 text-amber-200/90 border-slate-800;
+  @apply bg-slate-800/50 text-slate-300 border-slate-800;
+}
+
+/* Dark Mode Zebra */
+.high-contrast .report-table tr.zebra-row td,
+.high-contrast .report-table tr.zebra-row .sticky-col {
+  background-color: #162032; /* Slightly lighter than base slate-900/950 */
 }
 
 .high-contrast .report-table tbody .sticky-col {
@@ -221,72 +274,68 @@ body {
   background-color: #1e293b; /* Slate-800 */
 }
 
-/* ================= BADGES ================= */
+/* ================= LIST SLOT STYLES (CLEAN LIST WITH DOTS) ================= */
 
-.slot-badge {
-  @apply px-2 py-2 rounded-lg border mb-1 block w-full text-left truncate transition-all cursor-default shadow-sm select-none min-h-[32px];
+.slot-list-item {
+  @apply px-1.5 py-1.5 flex items-center gap-2 w-full text-left truncate transition-all cursor-default select-none text-xs font-semibold tracking-tight;
+  /* Clean look: no background */
 }
 
-.slot-badge.clickable:hover:not(.slot-selected):not(.slot-dragging) {
-  @apply ring-2 ring-indigo-400 scale-[1.02] cursor-pointer shadow-md z-10;
+.slot-list-item.clickable:hover:not(.slot-selected):not(.slot-dragging) {
+  @apply bg-gray-50 rounded;
 }
 
-.slot-empty {
-  @apply bg-rose-50 border-rose-200 text-rose-700 font-bold border-dashed border-2;
+/* Text Colors */
+.text-normal {
+  @apply text-slate-700;
 }
 
-.slot-normal {
-  @apply bg-white border-gray-200 text-gray-800 hover:border-indigo-300;
+.text-emergency {
+  @apply text-slate-900;
 }
 
-.slot-emergency {
-  @apply bg-red-700 border-red-800 text-white font-medium hover:bg-red-800;
+.text-empty {
+  @apply text-rose-500 italic font-normal opacity-80;
 }
 
-.slot-emergency .dot {
-  background-color: white;
-}
-
+/* States */
 .slot-selected {
-  @apply ring-4 ring-indigo-500/50 border-indigo-600 z-30 scale-[1.05] shadow-xl relative;
+  @apply bg-indigo-50 text-indigo-700 font-bold rounded;
 }
 
 .slot-dragging {
-  @apply opacity-50 cursor-grabbing border-dashed border-2 border-indigo-400 scale-95;
+  @apply opacity-50 bg-gray-50 border-dashed border border-gray-300 rounded;
 }
 
 .slot-drag-over {
-  @apply ring-2 ring-emerald-500 bg-emerald-50;
+  @apply bg-emerald-50 ring-1 ring-emerald-500 rounded;
 }
 
-/* Dark Mode Badges */
-.high-contrast .slot-badge {
-  @apply shadow-none;
+/* Dark Mode Slots */
+.high-contrast .slot-list-item.clickable:hover:not(.slot-selected):not(.slot-dragging) {
+  @apply bg-white/5;
 }
 
-.high-contrast .slot-empty {
-  @apply border-dashed border-slate-600 bg-slate-800 text-slate-400;
+.high-contrast .text-normal {
+  @apply text-slate-300;
 }
 
-.high-contrast .slot-normal {
-  @apply bg-slate-800 text-slate-200 border-slate-700 hover:border-indigo-400 hover:bg-slate-700;
+.high-contrast .text-emergency {
+  @apply text-white;
 }
 
-.high-contrast .slot-normal .dot {
-  background-color: #6366f1; /* Indigo-500 */
-}
-
-.high-contrast .slot-emergency {
-  @apply bg-red-900/60 text-white border-red-900 font-bold hover:bg-red-800/80;
+.high-contrast .text-empty {
+  @apply text-rose-400;
 }
 
 .high-contrast .slot-selected {
-  box-shadow: 0 0 0 2px #38bdf8, 0 0 15px rgba(56, 189, 248, 0.4);
-  background-color: #1e293b;
-  border-color: transparent;
+  @apply bg-indigo-900/40 text-indigo-200;
+}
+
+.high-contrast .slot-dragging {
+  @apply border-slate-600 bg-slate-800;
 }
 
 .high-contrast .slot-drag-over {
-  box-shadow: inset 0 0 0 2px #22c55e, 0 0 10px rgba(34, 197, 94, 0.4);
-  background-color: rgba(34, 197, 94, 0.1);
+  @apply bg-emerald-900/20 ring-emerald-500;
 }
