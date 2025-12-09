@@ -77,7 +77,7 @@ export class Scheduler {
       
       // Check if any constraint (specialty or unit) applies to this day
       // If a specialty is ONLY allowed on this day, it's a hard day.
-      const constraints = this.config.unitConstraints.filter(c => c.allowedDays.includes(dow));
+      const constraints = this.config.unitConstraints!.filter(c => c.allowedDays.includes(dow));
       
       // Use dynamic checks if needed, but for now hardcoded difficulty is simple
       // We can make this dynamic later if needed
@@ -92,7 +92,7 @@ export class Scheduler {
       let score = 1000;
       // Az kişinin tutabildiği servisler daha zor
       if (service.allowedUnits && service.allowedUnits.length > 0) {
-          const eligible = this.staff.filter(s => service.allowedUnits?.includes(s.unit)).length;
+          const eligible = this.staff.filter(s => service.allowedUnits?.includes(s.unit || '')).length;
           score -= (eligible * 10);
       }
       return score;
@@ -102,7 +102,7 @@ export class Scheduler {
   private getPotentialCandidatesCount(service: Service): number {
       return this.staff.filter(s => {
           if (service.allowedUnits && service.allowedUnits.length > 0) {
-              if (!service.allowedUnits.includes(s.unit)) return false;
+              if (!service.allowedUnits.includes(s.unit || '')) return false;
           }
           // Allowed Roles check removed
           return true;
@@ -216,7 +216,7 @@ export class Scheduler {
         const dayOfWeek = this.getDayOfWeek(day);
         const currentDayAssignments = dayAssignmentsMap.get(day)!;
 
-        for (const constraint of this.config.unitConstraints) {
+        for (const constraint of this.config.unitConstraints || []) {
             if (constraint.allowedDays.includes(dayOfWeek)) {
                  const targetSpecialty = constraint.unit.trim();
                  const specialists = this.staff.filter(s => s.specialty && s.specialty.trim() === targetSpecialty);
@@ -364,7 +364,7 @@ export class Scheduler {
     }
 
     // --- PHASE 3: FILL TO GLOBAL TARGET (MAX BALANCE) (Global Pass) ---
-    if (this.config.dailyTotalTarget > 0) {
+    if (this.config.dailyTotalTarget && this.config.dailyTotalTarget > 0) {
         for (const day of daysToProcess) {
              const { isWeekend, isSat, isSun, isFri, assignedTodayIds } = getContext(day);
              const currentDayAssignments = dayAssignmentsMap.get(day)!;
@@ -382,7 +382,7 @@ export class Scheduler {
                   
                   flexibleServices.sort((a, b) => this.getPotentialCandidatesCount(b) - this.getPotentialCandidatesCount(a));
                   
-                  let filled Something = false;
+                  let filledSomething = false;
                   for (const service of flexibleServices) {
                        let extraCandidate = this.findBestCandidate(
                           service, day, assignedTodayIds, dayAssignmentsMap, staffStats, 
@@ -400,11 +400,11 @@ export class Scheduler {
                           assignToSlot(day, extraCandidate, service);
                           assignedTodayIds.add(extraCandidate.id);
                           currentTotalStaff++;
-                          filled Something = true;
+                          filledSomething = true;
                           break; 
                       }
                   }
-                  if (!filled Something) break;
+                  if (!filledSomething) break;
              }
         }
     }
@@ -415,7 +415,7 @@ export class Scheduler {
             day: d,
             assignments: dayAssignmentsMap.get(d) || [],
             isWeekend: this.isWeekend(d),
-            isHoliday: this.config.holidays.includes(d)
+            isHoliday: false
         });
     }
 
@@ -534,18 +534,18 @@ export class Scheduler {
               // A. Service Unit Matching
               // If service allows specific units, check if person matches
               if (service.allowedUnits && service.allowedUnits.length > 0) {
-                  if (!service.allowedUnits.includes(person.unit)) return false;
+                  if (!service.allowedUnits.includes(person.unit || '')) return false;
               }
 
               // B. Unit Day Constraints (Legacy Unit Check)
-              const constraint = this.config.unitConstraints.find(c => c.unit === person.unit);
+              const constraint = this.config.unitConstraints?.find(c => c.unit === person.unit);
               if (constraint) {
                   if (!constraint.allowedDays.includes(dayOfWeek)) return false;
               }
               
               // C. Specialty Day Constraints (Dynamic Logic)
               if (person.specialty && person.specialty !== 'none') {
-                  const specConstraint = this.config.unitConstraints.find(c => c.unit.trim() === person.specialty?.trim());
+                  const specConstraint = this.config.unitConstraints?.find(c => c.unit.trim() === person.specialty?.trim());
                   if (specConstraint) {
                       // If constraint exists for this specialty name, they can ONLY work on allowed days
                       if (!specConstraint.allowedDays.includes(dayOfWeek)) return false;
@@ -625,7 +625,7 @@ export class Scheduler {
 
           // 2. Specialty Priority (Fallback for Phase 2)
           if (person.specialty && person.specialty !== 'none') {
-             const constraint = this.config.unitConstraints.find(c => c.unit.trim() === person.specialty?.trim());
+             const constraint = this.config.unitConstraints?.find(c => c.unit.trim() === person.specialty?.trim());
              if (constraint && constraint.allowedDays.includes(dayOfWeek)) {
                  score += 100000;
              }
@@ -637,8 +637,8 @@ export class Scheduler {
           }
           
           // 4. UNIT DIVERSITY & SATURATION SCORE
-          const countToday = assignedUnitsCount.get(person.unit) || 0;
-          const countYesterday = assignedYesterdayUnitsCount.get(person.unit) || 0;
+          const countToday = assignedUnitsCount.get(person.unit || '') || 0;
+          const countYesterday = assignedYesterdayUnitsCount.get(person.unit || '') || 0;
           
           // A. Diversity Bonus (Start of day)
           if (countToday === 0) {
@@ -649,7 +649,7 @@ export class Scheduler {
           // If 1 KBB is already assigned, heavily penalize adding a 2nd one.
           // Exception: If the service explicitly REQUIRES this unit (e.g. KBB Service), we must allow it.
           // Note: service.allowedUnits might be null or empty for general services.
-          const isServiceRestrictedToUnit = service.allowedUnits?.includes(person.unit);
+          const isServiceRestrictedToUnit = service.allowedUnits?.includes(person.unit || '');
           
           if (countToday > 0 && !isServiceRestrictedToUnit) {
                score -= 8000; // Strong penalty to push the 2nd KBB to tomorrow
