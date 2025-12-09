@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ScheduleResult, Service, Staff, Group } from '../../../types';
 import { Card, Button } from '../../../components/ui';
@@ -42,6 +41,10 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({
           };
         }).sort((a, b) => (a.group || '').localeCompare(b.group || ''));
       }, [result, staff]);
+
+    const chartWidth = useMemo(() => {
+        return Math.max(800, chartData.length * 60); // Dynamic width for scrolling
+    }, [chartData]);
 
     // Button Helper
     const btnClass = `text-xs h-9 ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700 hover:!bg-slate-700 hover:!text-white' : ''}`;
@@ -98,20 +101,22 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({
             {/* Doctor Specific Chart: Service vs Emergency Targets */}
             <Card className={`p-4 md:p-6 shadow-md overflow-hidden ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 text-white' : ''}`}>
                   <h3 className="font-bold text-lg mb-4">Hedef Tutarlılığı (Acil vs Servis)</h3>
-                  <div style={{ width: '100%', height: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barGap={2}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isBlackAndWhite ? "#374151" : "#e5e7eb"} />
-                        <XAxis dataKey="name" tick={{fontSize: 10, fill: isBlackAndWhite ? '#d1d5db' : '#4b5563'}} interval={0} angle={-45} textAnchor="end" />
-                        <YAxis tick={{ fill: isBlackAndWhite ? '#d1d5db' : '#4b5563', fontSize: 12 }} />
-                        <Tooltip contentStyle={{ backgroundColor: isBlackAndWhite ? '#1e293b' : 'white', color: isBlackAndWhite ? 'white' : 'black' }} />
-                        <Legend verticalAlign="top" />
-                        <Bar dataKey="targetService" name="Hedef (Srv)" stackId="a" fill="#818cf8" />
-                        <Bar dataKey="actualService" name="Gerçek (Srv)" stackId="b" fill="#4f46e5" />
-                        <Bar dataKey="targetEmergency" name="Hedef (Acil)" stackId="a" fill="#fca5a5" />
-                        <Bar dataKey="actualEmergency" name="Gerçek (Acil)" stackId="b" fill="#e11d48" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                      <div style={{ width: `${chartWidth}px`, height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barGap={2}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isBlackAndWhite ? "#374151" : "#e5e7eb"} />
+                            <XAxis dataKey="name" tick={{fontSize: 10, fill: isBlackAndWhite ? '#d1d5db' : '#4b5563'}} interval={0} angle={-45} textAnchor="end" height={80} />
+                            <YAxis tick={{ fill: isBlackAndWhite ? '#d1d5db' : '#4b5563', fontSize: 12 }} />
+                            <Tooltip contentStyle={{ backgroundColor: isBlackAndWhite ? '#1e293b' : 'white', color: isBlackAndWhite ? 'white' : 'black' }} />
+                            <Legend verticalAlign="top" />
+                            <Bar dataKey="targetService" name="Hedef (Srv)" stackId="a" fill="#818cf8" />
+                            <Bar dataKey="actualService" name="Gerçek (Srv)" stackId="b" fill="#4f46e5" />
+                            <Bar dataKey="targetEmergency" name="Hedef (Acil)" stackId="a" fill="#fca5a5" />
+                            <Bar dataKey="actualEmergency" name="Gerçek (Acil)" stackId="b" fill="#e11d48" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                   </div>
             </Card>
 
@@ -123,7 +128,7 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({
                       <tr>
                         <th className={`sticky-col w-20 ${isBlackAndWhite ? 'bg-slate-950 text-white' : 'bg-white'}`}>Gün</th>
                         {services.map(s => (
-                          <th key={s.id} className={`min-w-[140px] ${isBlackAndWhite ? 'bg-slate-950 text-white' : ''}`}>
+                          <th key={s.id} className={`min-w-[150px] ${isBlackAndWhite ? 'bg-slate-950 text-white' : ''}`}>
                               <div className="truncate">{s.name}</div>
                           </th>
                         ))}
