@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Scheduler } from './scheduler';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { readStaffFromExcel } from '../../services/excelService';
 import { exportToExcel } from './services/reportService'; 
 import { generateTemplate } from '../../services/excelService';
@@ -13,6 +12,8 @@ import { Moon, Sun, Activity, Info, X, Eye, ArrowLeft, Users, Settings2, Zap, Bo
 import { StaffManager } from './components/StaffManager'; 
 import { ServiceManager } from './components/ServiceManager'; 
 import { ScheduleViewer } from './components/ScheduleViewer'; 
+import { useDebounce } from '../../hooks/useDebounce';
+import { Scheduler } from './scheduler';
 
 const loadState = <T,>(key: string, defaultValue: T): T => {
   try {
@@ -72,6 +73,12 @@ export default function App({ onBack }: NurseAppProps) {
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
 
+  // Debounce expensive state changes for persistence
+  const debouncedStaff = useDebounce(staff, 1000);
+  const debouncedServices = useDebounce(services, 1000);
+  const debouncedConstraints = useDebounce(unitConstraints, 1000);
+  const debouncedPresets = useDebounce(savedPresets, 1000);
+
   useEffect(() => {
     if (isBlackAndWhite) {
       document.body.style.backgroundColor = '#020617'; 
@@ -95,22 +102,23 @@ export default function App({ onBack }: NurseAppProps) {
       }
   }, []);
 
-  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_staff', JSON.stringify(staff)); }, [staff, isReadOnly]);
-  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_services', JSON.stringify(services)); }, [services, isReadOnly]);
+  // Debounced Saves
+  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_staff', JSON.stringify(debouncedStaff)); }, [debouncedStaff, isReadOnly]);
+  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_services', JSON.stringify(debouncedServices)); }, [debouncedServices, isReadOnly]);
+  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_constraints', JSON.stringify(debouncedConstraints)); }, [debouncedConstraints, isReadOnly]);
+  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_user_presets', JSON.stringify(debouncedPresets)); }, [debouncedPresets, isReadOnly]);
+
+  // Regular Saves (UI State)
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_roleConfigs', JSON.stringify(roleConfigs)); }, [roleConfigs, isReadOnly]);
-  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_constraints', JSON.stringify(unitConstraints)); }, [unitConstraints, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_month', JSON.stringify(month)); }, [month, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_year', JSON.stringify(year)); }, [year, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_randomize', JSON.stringify(randomizeDays)); }, [randomizeDays, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_preventEveryOther', JSON.stringify(preventEveryOther)); }, [preventEveryOther, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_dailyTotalTarget', JSON.stringify(dailyTotalTarget)); }, [dailyTotalTarget, isReadOnly]);
   useEffect(() => { localStorage.setItem('nobet_bw_theme', JSON.stringify(isBlackAndWhite)); }, [isBlackAndWhite]); 
-  
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_units', JSON.stringify(customUnits)); }, [customUnits, isReadOnly]);
   useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_specialties', JSON.stringify(customSpecialties)); }, [customSpecialties, isReadOnly]);
   
-  useEffect(() => { if(!isReadOnly) localStorage.setItem('nobet_user_presets', JSON.stringify(savedPresets)); }, [savedPresets, isReadOnly]);
-
   const uniqueRoles = useMemo(() => {
     if (!Array.isArray(staff)) return [];
     return Array.from(new Set(staff.map(s => s.role))).sort((a: number, b: number) => a - b);
@@ -212,9 +220,11 @@ export default function App({ onBack }: NurseAppProps) {
 
   const handleGenerate = () => {
       setLoading(true);
+      
+      // Use setTimeout to yield to the main thread so the UI can update to "Loading..."
       setTimeout(() => {
           try {
-              const scheduler = new Scheduler(staff, services, {
+              const config = {
                   year,
                   month,
                   maxRetries: 50,
@@ -223,12 +233,14 @@ export default function App({ onBack }: NurseAppProps) {
                   unitConstraints: unitConstraints,
                   dailyTotalTarget: dailyTotalTarget,
                   holidays: [] 
-              });
+              };
+              const scheduler = new Scheduler(staff, services, config);
               const res = scheduler.generate();
               setResult(res);
               setActiveTab('generate');
-          } catch (e: any) {
-              alert("Çizelge oluşturulamadı: " + e.message);
+          } catch (error: any) {
+              console.error(error);
+              alert("Çizelge oluşturulamadı: " + error.message);
           } finally {
               setLoading(false);
           }

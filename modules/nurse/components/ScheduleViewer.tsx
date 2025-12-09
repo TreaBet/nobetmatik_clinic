@@ -1,10 +1,10 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { ScheduleResult, Service, Staff, DaySchedule } from '../../../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { ScheduleResult, Service, Staff, DaySchedule, ShiftAssignment } from '../../../types';
 import { Card, Button } from '../../../components/ui';
 import { ICONS } from '../../../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Edit3, Save, Share2, Pencil, RotateCcw, LayoutGrid, Users, Link as LinkIcon, Star, GripVertical, Check, X, Search, AlertTriangle } from 'lucide-react';
+import { Edit3, Save, Share2, RotateCcw, LayoutGrid, Users, Link as LinkIcon, Star, GripVertical, Check, X, Search } from 'lucide-react';
 
 interface ScheduleViewerProps {
     result: ScheduleResult;
@@ -19,20 +19,166 @@ interface ScheduleViewerProps {
     onShare?: () => void;
 }
 
+// --- MEMOIZED COMPONENTS FOR PERFORMANCE ---
+
+interface AssignmentCellProps {
+    assignment: ShiftAssignment;
+    day: number;
+    serviceId: string;
+    isEditing: boolean;
+    staffList: Staff[];
+    isBlackAndWhite: boolean;
+    dragData: {day: number, serviceId: string, staffId: string} | null;
+    dragOverTarget: {day: number, serviceId: string, staffId: string} | null;
+    onDragStart: (e: React.DragEvent, day: number, serviceId: string, staffId: string) => void;
+    onDrop: (e: React.DragEvent, day: number, serviceId: string, staffId: string) => void;
+    onDragEnter: (e: React.DragEvent, day: number, serviceId: string, staffId: string) => void;
+    onCellClick: (day: number, serviceId: string, staffId: string) => void;
+}
+
+const AssignmentCell = React.memo(({ 
+    assignment, day, serviceId, isEditing, staffList, isBlackAndWhite, 
+    dragData, dragOverTarget, onDragStart, onDrop, onDragEnter, onCellClick 
+}: AssignmentCellProps) => {
+    
+    let bgClass = isBlackAndWhite ? 'bg-slate-800' : 'bg-white shadow-sm border border-gray-100';
+    let textClass = isBlackAndWhite ? 'text-slate-200' : 'text-gray-800';
+    
+    if (assignment.staffId === 'EMPTY') {
+        bgClass = isBlackAndWhite ? 'bg-slate-900 border border-dashed border-slate-700' : 'bg-gray-50 border border-dashed border-gray-300';
+        textClass = 'text-gray-400 italic';
+    }
+    
+    const staffMember = staffList.find(s => s.id === assignment.staffId);
+    const isSenior = staffMember?.role === 1;
+    
+    // Drag State
+    const isDraggingItem = dragData && dragData.day === day && dragData.serviceId === serviceId && dragData.staffId === assignment.staffId;
+    const isDropTarget = dragOverTarget && dragOverTarget.day === day && dragOverTarget.serviceId === serviceId && dragOverTarget.staffId === assignment.staffId;
+
+    if (isDraggingItem) bgClass = isBlackAndWhite ? 'bg-indigo-900/40 border border-indigo-500' : 'bg-indigo-50 border border-indigo-300';
+    if (isDropTarget) bgClass = isBlackAndWhite ? 'bg-emerald-900/40 border border-emerald-500' : 'bg-emerald-50 border border-emerald-300';
+
+    const dotColor = assignment.isEmergency 
+        ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' 
+        : (isBlackAndWhite ? 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]' : 'bg-indigo-500');
+
+    return (
+        <div 
+            draggable={isEditing}
+            onDragStart={isEditing ? (e) => onDragStart(e, day, serviceId, assignment.staffId) : undefined}
+            onDrop={isEditing ? (e) => onDrop(e, day, serviceId, assignment.staffId) : undefined}
+            onDragEnter={isEditing ? (e) => onDragEnter(e, day, serviceId, assignment.staffId) : undefined}
+            onClick={(e) => {
+                if (isEditing) {
+                    e.stopPropagation();
+                    onCellClick(day, serviceId, assignment.staffId);
+                }
+            }}
+            className={`
+                relative group/slot flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200
+                ${bgClass} ${isEditing ? 'cursor-move hover:ring-2 hover:ring-indigo-500/50' : 'cursor-default'}
+                ${isDraggingItem ? 'opacity-50 scale-95' : 'opacity-100'}
+            `}
+        >
+            <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${assignment.staffId === 'EMPTY' ? 'hidden' : dotColor}`}></div>
+                <span className={`truncate text-xs font-bold ${textClass}`}>{assignment.staffName}</span>
+            </div>
+            {isSenior && assignment.staffId !== 'EMPTY' && (
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0 ml-1 drop-shadow-sm" />
+            )}
+            {isEditing && (
+                <GripVertical className="absolute right-1 w-3 h-3 text-gray-500 opacity-0 group-hover/slot:opacity-50" />
+            )}
+        </div>
+    );
+});
+
+interface DayRowProps {
+    day: DaySchedule;
+    index: number;
+    services: Service[];
+    isEditing: boolean;
+    staffList: Staff[];
+    isBlackAndWhite: boolean;
+    year: number;
+    month: number;
+    dragData: any;
+    dragOverTarget: any;
+    onDragStart: any;
+    onDrop: any;
+    onDragEnter: any;
+    onDragOver: any;
+    onCellClick: any;
+}
+
+const DayRow = React.memo(({ 
+    day, index, services, isEditing, staffList, isBlackAndWhite, year, month,
+    dragData, dragOverTarget, onDragStart, onDrop, onDragEnter, onDragOver, onCellClick
+}: DayRowProps) => {
+    const isHoliday = day.isHoliday;
+    const isWeekend = day.isWeekend;
+
+    return (
+        <tr className={`${isWeekend || isHoliday ? 'is-weekend' : ''} ${index % 2 === 0 ? 'bg-slate-900/50' : ''}`}>
+            {/* Day Column */}
+            <td className={`sticky-col p-0 border-r border-b ${isBlackAndWhite ? 'bg-slate-950 border-slate-800 text-slate-200' : 'border-gray-100'}`} style={{ height: '1px' }}>
+                <div className={`flex flex-col items-center justify-center h-full min-h-[70px] w-full ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/20' : 'bg-red-50') : 'bg-inherit'}`}>
+                    <span className={`text-2xl font-black leading-none tracking-tight ${isHoliday ? 'text-red-500' : (isBlackAndWhite ? 'text-white' : 'text-gray-800')}`}>{day.day}</span>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${isHoliday ? 'text-red-400' : (isWeekend ? (isBlackAndWhite ? 'text-slate-400' : 'text-indigo-600') : (isBlackAndWhite ? 'text-slate-600' : 'text-gray-400'))}`}>
+                        {new Date(year, month, day.day).toLocaleString('tr-TR', {weekday: 'short'})}
+                    </span>
+                </div>
+            </td>
+            
+            {/* Service Columns */}
+            {services.map(service => {
+                const assignments = day.assignments.filter(a => a.serviceId === service.id);
+                return (
+                    <td key={service.id} 
+                        className={`align-top h-full p-2 border-b border-r ${isBlackAndWhite ? 'border-slate-800 bg-slate-900' : 'border-gray-100'} ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/5' : 'bg-red-50/10') : ''}`}
+                        style={{ height: '1px' }}
+                        onDragOver={isEditing ? onDragOver : undefined}
+                        onDrop={isEditing ? (e) => onDrop(e, day.day, service.id, "dummy") : undefined}
+                    >
+                        <div className="flex flex-col gap-1.5 min-h-[40px] h-full justify-start">
+                            {assignments.length > 0 ? assignments.map((a, idx) => (
+                                <AssignmentCell 
+                                    key={idx}
+                                    assignment={a}
+                                    day={day.day}
+                                    serviceId={service.id}
+                                    isEditing={isEditing}
+                                    staffList={staffList}
+                                    isBlackAndWhite={isBlackAndWhite}
+                                    dragData={dragData}
+                                    dragOverTarget={dragOverTarget}
+                                    onDragStart={onDragStart}
+                                    onDrop={onDrop}
+                                    onDragEnter={onDragEnter}
+                                    onCellClick={onCellClick}
+                                />
+                            )) : (
+                                <span className={`text-center text-[10px] block py-4 border border-dashed rounded-lg h-full flex items-center justify-center select-none opacity-20 ${isBlackAndWhite ? 'border-slate-700 text-slate-500' : 'border-gray-200 text-gray-400'}`}>-</span>
+                            )}
+                        </div>
+                    </td>
+                );
+            })}
+        </tr>
+    );
+});
+
 export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResult, services, staff, year, month, isBlackAndWhite, handleDownload, isReadOnly = false, onShare }) => {
     
-    // --- View Mode State ---
     const [viewMode, setViewMode] = useState<'daily' | 'staff'>('daily');
-
-    // --- Manual Edit State (Daily View) ---
     const [isEditing, setIsEditing] = useState(false);
     const [editingSlot, setEditingSlot] = useState<{day: number, serviceId: string, currentStaffId: string} | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-
-    // --- History / Undo State ---
     const [history, setHistory] = useState<DaySchedule[][]>([]);
-
-    // --- Drag & Drop State ---
+    
+    // Drag & Drop State
     const [dragData, setDragData] = useState<{day: number, serviceId: string, staffId: string} | null>(null);
     const [dragOverTarget, setDragOverTarget] = useState<{day: number, serviceId: string, staffId: string} | null>(null);
 
@@ -45,7 +191,7 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
           
           return {
             name: displayName,
-            unit: p?.unit || '', // Store for sorting
+            unit: p?.unit || '', 
             targetService: p?.quotaService || 0,
             actualService: s.totalShifts,
             weekendShifts: s.weekendShifts
@@ -53,10 +199,7 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
         }).sort((a, b) => (a.unit || "").localeCompare(b.unit || ""));
       }, [result, staff]);
 
-    // Calculate dynamic width for the chart to allow scrolling
-    const chartWidth = useMemo(() => {
-        return Math.max(800, chartData.length * 60); // 60px per bar group
-    }, [chartData]);
+    const chartWidth = useMemo(() => Math.max(800, chartData.length * 60), [chartData]);
 
     const fairnessScore = useMemo(() => {
         if (!staff || !result) return { stdDev: "0", reqRate: 0 };
@@ -80,10 +223,10 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
     }, [result, staff]);
 
     // --- Helper Functions ---
-    const addToHistory = () => {
-        const snapshot = JSON.parse(JSON.stringify(result.schedule));
+    const addToHistory = useCallback(() => {
+        const snapshot = structuredClone(result.schedule);
         setHistory(prev => [...prev.slice(-19), snapshot]); 
-    };
+    }, [result.schedule]);
 
     const handleUndo = () => {
         if (history.length === 0) return;
@@ -121,34 +264,22 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
 
         const unfilled = newSchedule.reduce((acc, day) => acc + day.assignments.filter(a => a.staffId === 'EMPTY').length, 0);
 
-        setResult({
-            ...result,
-            schedule: newSchedule,
-            stats: newStats,
-            unfilledSlots: unfilled
-        });
+        setResult({ ...result, schedule: newSchedule, stats: newStats, unfilledSlots: unfilled });
     };
 
-    // --- Daily View Edit Logic ---
     const handleUpdateAssignment = (newStaffId: string) => {
         if (!editingSlot) return;
         addToHistory();
-        updateAssignment(editingSlot.day, editingSlot.serviceId, editingSlot.currentStaffId, newStaffId);
-        setEditingSlot(null);
-        setSearchTerm("");
-    };
-
-    const updateAssignment = (day: number, serviceId: string, oldStaffId: string, newStaffId: string) => {
+        
         const newSchedule = [...result.schedule];
-        const dayData = newSchedule.find(d => d.day === day);
+        const dayData = newSchedule.find(d => d.day === editingSlot.day);
         if(!dayData) return;
 
-        const targetAssignmentIndex = dayData.assignments.findIndex(a => a.serviceId === serviceId && a.staffId === oldStaffId);
+        const targetAssignmentIndex = dayData.assignments.findIndex(a => a.serviceId === editingSlot.serviceId && a.staffId === editingSlot.currentStaffId);
         if(targetAssignmentIndex === -1) return;
 
         const newStaffMember = staff.find(s => s.id === newStaffId);
         const isRemoving = newStaffId === 'EMPTY';
-        
         const existingIsEmergency = dayData.assignments[targetAssignmentIndex].isEmergency;
 
         const updatedAssignment = {
@@ -163,28 +294,31 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
 
         dayData.assignments[targetAssignmentIndex] = updatedAssignment as any;
         recalculateStats(newSchedule);
+        
+        setEditingSlot(null);
+        setSearchTerm("");
     };
 
-    // --- Drag & Drop ---
-    const handleDragStart = (e: React.DragEvent, day: number, serviceId: string, staffId: string) => {
+    // --- Drag & Drop Handlers (Memoized) ---
+    const handleDragStart = useCallback((e: React.DragEvent, day: number, serviceId: string, staffId: string) => {
         if(!isEditing) return;
         setDragData({ day, serviceId, staffId });
         e.dataTransfer.effectAllowed = 'move';
-    };
+    }, [isEditing]);
 
-    const handleDragOver = (e: React.DragEvent) => {
+    const handleDragOver = useCallback((e: React.DragEvent) => {
         if(!isEditing) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-    };
+    }, [isEditing]);
 
-    const handleDragEnter = (e: React.DragEvent, day: number, serviceId: string, staffId: string) => {
+    const handleDragEnter = useCallback((e: React.DragEvent, day: number, serviceId: string, staffId: string) => {
         if(!isEditing || !dragData) return;
         if (dragData.day === day && dragData.serviceId === serviceId && dragData.staffId === staffId) return;
         setDragOverTarget({ day, serviceId, staffId });
-    };
+    }, [isEditing, dragData]);
 
-    const handleDrop = (e: React.DragEvent, targetDay: number, targetServiceId: string, targetStaffId: string) => {
+    const handleDrop = useCallback((e: React.DragEvent, targetDay: number, targetServiceId: string, targetStaffId: string) => {
         if(!isEditing || !dragData) return;
         e.preventDefault();
         setDragOverTarget(null);
@@ -210,27 +344,16 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
         const sourceAssignment = sourceDay.assignments[sourceIdx];
         const targetAssignment = targetDayObj.assignments[targetIdx];
 
-        sourceDay.assignments[sourceIdx] = {
-            ...sourceAssignment,
-            staffId: targetAssignment.staffId,
-            staffName: targetAssignment.staffName,
-            role: targetAssignment.role,
-            group: targetAssignment.group,
-            unit: targetAssignment.unit
-        };
-
-        targetDayObj.assignments[targetIdx] = {
-            ...targetAssignment,
-            staffId: sourceAssignment.staffId,
-            staffName: sourceAssignment.staffName,
-            role: sourceAssignment.role,
-            group: sourceAssignment.group,
-            unit: sourceAssignment.unit
-        };
+        sourceDay.assignments[sourceIdx] = { ...sourceAssignment, staffId: targetAssignment.staffId, staffName: targetAssignment.staffName, role: targetAssignment.role, group: targetAssignment.group, unit: targetAssignment.unit };
+        targetDayObj.assignments[targetIdx] = { ...targetAssignment, staffId: sourceAssignment.staffId, staffName: sourceAssignment.staffName, role: sourceAssignment.role, group: sourceAssignment.group, unit: sourceAssignment.unit };
 
         recalculateStats(newSchedule);
         setDragData(null);
-    };
+    }, [isEditing, dragData, result.schedule, addToHistory]);
+
+    const handleCellClick = useCallback((day: number, serviceId: string, staffId: string) => {
+        setEditingSlot({day, serviceId, currentStaffId: staffId});
+    }, []);
 
     const getAvailableStaffForEdit = () => {
         if(!editingSlot) return [];
@@ -253,20 +376,8 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
         return candidates;
     };
 
-    // Sorting staff for matrix view
-    const sortedStaff = useMemo(() => {
-        return [...staff].sort((a, b) => {
-            const unitA = a.unit || "";
-            const unitB = b.unit || "";
-            return unitA.localeCompare(unitB) || a.name.localeCompare(b.name);
-        });
-    }, [staff]);
+    const isSuccess = result.unfilledSlots === 0;
 
-    // Determine colors for Unfilled Slots Card
-    const unfilledCount = result.unfilledSlots;
-    const isSuccess = unfilledCount === 0;
-
-    // Use effect to focus search
     useEffect(() => {
         if (editingSlot) {
             const input = document.getElementById('staff-search-input');
@@ -310,21 +421,13 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                   </Card>
             </div>
 
-            {/* Actions Bar - View Switcher & Buttons */}
+            {/* Actions Bar */}
             <div className={`flex flex-col xl:flex-row justify-between items-center p-3 rounded-xl border shadow-sm gap-3 ${isBlackAndWhite ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
-                 
-                 {/* VIEW MODE SWITCHER */}
                  <div className={`flex p-1 rounded-lg border ${isBlackAndWhite ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-200'}`}>
-                    <button 
-                        onClick={() => setViewMode('daily')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'daily' ? (isBlackAndWhite ? 'bg-slate-600 text-white shadow' : 'bg-white text-indigo-600 shadow') : (isBlackAndWhite ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')}`}
-                    >
+                    <button onClick={() => setViewMode('daily')} className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'daily' ? (isBlackAndWhite ? 'bg-slate-600 text-white shadow' : 'bg-white text-indigo-600 shadow') : (isBlackAndWhite ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')}`}>
                         <LayoutGrid className="w-3.5 h-3.5" /> Günlük
                     </button>
-                    <button 
-                        onClick={() => setViewMode('staff')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'staff' ? (isBlackAndWhite ? 'bg-slate-600 text-white shadow' : 'bg-white text-indigo-600 shadow') : (isBlackAndWhite ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')}`}
-                    >
+                    <button onClick={() => setViewMode('staff')} className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'staff' ? (isBlackAndWhite ? 'bg-slate-600 text-white shadow' : 'bg-white text-indigo-600 shadow') : (isBlackAndWhite ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')}`}>
                         <Users className="w-3.5 h-3.5" /> Personel
                     </button>
                  </div>
@@ -394,104 +497,33 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
                           </tr>
                         </thead>
                         <tbody>
-                          {result.schedule.map((day, index) => {
-                              const isHoliday = day.isHoliday;
-                              const isWeekend = day.isWeekend;
-                              return (
-                                <tr key={day.day} className={`${isWeekend || isHoliday ? 'is-weekend' : ''} ${index % 2 === 0 ? 'bg-slate-900/50' : ''}`}>
-                                  {/* Day Column */}
-                                  <td className={`sticky-col p-0 border-r border-b ${isBlackAndWhite ? 'bg-slate-950 border-slate-800 text-slate-200' : 'border-gray-100'}`} style={{ height: '1px' }}>
-                                    <div className={`flex flex-col items-center justify-center h-full min-h-[70px] w-full ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/20' : 'bg-red-50') : 'bg-inherit'}`}>
-                                      <span className={`text-2xl font-black leading-none tracking-tight ${isHoliday ? 'text-red-500' : (isBlackAndWhite ? 'text-white' : 'text-gray-800')}`}>{day.day}</span>
-                                      <span className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${isHoliday ? 'text-red-400' : (isWeekend ? (isBlackAndWhite ? 'text-slate-400' : 'text-indigo-600') : (isBlackAndWhite ? 'text-slate-600' : 'text-gray-400'))}`}>
-                                        {new Date(year, month, day.day).toLocaleString('tr-TR', {weekday: 'short'})}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  
-                                  {/* Service Columns */}
-                                  {services.map(service => {
-                                    const assignments = day.assignments.filter(a => a.serviceId === service.id);
-                                    return (
-                                      <td key={service.id} 
-                                        className={`align-top h-full p-2 border-b border-r ${isBlackAndWhite ? 'border-slate-800 bg-slate-900' : 'border-gray-100'} ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/5' : 'bg-red-50/10') : ''}`}
-                                        style={{ height: '1px' }}
-                                        onDragOver={isEditing ? handleDragOver : undefined}
-                                        onDrop={isEditing ? (e) => handleDrop(e, day.day, service.id, "dummy") : undefined} // Fallback drop
-                                      >
-                                        <div className="flex flex-col gap-1.5 min-h-[40px] h-full justify-start">
-                                            {assignments.length > 0 ? assignments.map((a, idx) => {
-                                              let bgClass = isBlackAndWhite ? 'bg-slate-800' : 'bg-white shadow-sm border border-gray-100';
-                                              let textClass = isBlackAndWhite ? 'text-slate-200' : 'text-gray-800';
-                                              
-                                              if (a.staffId === 'EMPTY') {
-                                                  bgClass = isBlackAndWhite ? 'bg-slate-900 border border-dashed border-slate-700' : 'bg-gray-50 border border-dashed border-gray-300';
-                                                  textClass = 'text-gray-400 italic';
-                                              }
-                                              
-                                              const staffMember = staff.find(s => s.id === a.staffId);
-                                              const isSenior = staffMember?.role === 1;
-                                              const isDraggable = isEditing;
-                                              
-                                              // Drag State
-                                              const isDraggingItem = dragData && dragData.day === day.day && dragData.serviceId === service.id && dragData.staffId === a.staffId;
-                                              const isDropTarget = dragOverTarget && dragOverTarget.day === day.day && dragOverTarget.serviceId === service.id && dragOverTarget.staffId === a.staffId;
-
-                                              if (isDraggingItem) bgClass = isBlackAndWhite ? 'bg-indigo-900/40 border border-indigo-500' : 'bg-indigo-50 border border-indigo-300';
-                                              if (isDropTarget) bgClass = isBlackAndWhite ? 'bg-emerald-900/40 border border-emerald-500' : 'bg-emerald-50 border border-emerald-300';
-
-                                              const dotColor = a.isEmergency 
-                                                  ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' 
-                                                  : (isBlackAndWhite ? 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]' : 'bg-indigo-500');
-
-                                              return (
-                                                <div 
-                                                  key={idx} 
-                                                  draggable={isDraggable}
-                                                  onDragStart={isDraggable ? (e) => handleDragStart(e, day.day, service.id, a.staffId) : undefined}
-                                                  onDrop={isDraggable ? (e) => handleDrop(e, day.day, service.id, a.staffId) : undefined}
-                                                  onDragEnter={isDraggable ? (e) => handleDragEnter(e, day.day, service.id, a.staffId) : undefined}
-                                                  onClick={(e) => {
-                                                      if (isEditing) {
-                                                          e.stopPropagation();
-                                                          setEditingSlot({day: day.day, serviceId: service.id, currentStaffId: a.staffId});
-                                                      }
-                                                  }}
-                                                  className={`
-                                                      relative group/slot flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200
-                                                      ${bgClass} ${isEditing ? 'cursor-move hover:ring-2 hover:ring-indigo-500/50' : 'cursor-default'}
-                                                      ${isDraggingItem ? 'opacity-50 scale-95' : 'opacity-100'}
-                                                  `}
-                                                >
-                                                   <div className="flex items-center gap-2.5 overflow-hidden">
-                                                       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${a.staffId === 'EMPTY' ? 'hidden' : dotColor}`}></div>
-                                                       <span className={`truncate text-xs font-bold ${textClass}`}>{a.staffName}</span>
-                                                   </div>
-                                                   {isSenior && a.staffId !== 'EMPTY' && (
-                                                       <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0 ml-1 drop-shadow-sm" />
-                                                   )}
-                                                   {isEditing && (
-                                                       <GripVertical className="absolute right-1 w-3 h-3 text-gray-500 opacity-0 group-hover/slot:opacity-50" />
-                                                   )}
-                                                </div>
-                                              );
-                                            }) : (
-                                              <span className={`text-center text-[10px] block py-4 border border-dashed rounded-lg h-full flex items-center justify-center select-none opacity-20 ${isBlackAndWhite ? 'border-slate-700 text-slate-500' : 'border-gray-200 text-gray-400'}`}>-</span>
-                                            )}
-                                          </div>
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                          })}
+                          {result.schedule.map((day, index) => (
+                              <DayRow 
+                                key={day.day}
+                                day={day}
+                                index={index}
+                                services={services}
+                                isEditing={isEditing}
+                                staffList={staff}
+                                isBlackAndWhite={isBlackAndWhite}
+                                year={year}
+                                month={month}
+                                dragData={dragData}
+                                dragOverTarget={dragOverTarget}
+                                onDragStart={handleDragStart}
+                                onDrop={handleDrop}
+                                onDragEnter={handleDragEnter}
+                                onDragOver={handleDragOver}
+                                onCellClick={handleCellClick}
+                              />
+                          ))}
                         </tbody>
                       </table>
                     </div>
                 </Card>
             )}
 
-            {/* Editing Dropdown (Same as previous, just ensuring styles match) */}
+            {/* Editing Dropdown */}
             {editingSlot && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 animate-fade-in"

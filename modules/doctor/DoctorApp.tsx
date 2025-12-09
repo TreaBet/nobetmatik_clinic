@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Scheduler } from './scheduler';
 import { readStaffFromExcel, generateTemplate } from '../../services/excelService';
 import { exportToExcel } from './services/reportService';
 import { exportToJSON, importFromJSON, AppData } from '../../services/backupService';
@@ -8,12 +7,14 @@ import { generateShareLink, parseShareLink } from '../../services/shareService';
 import { Staff, Service, RoleConfig, ScheduleResult, DaySchedule } from '../../types';
 import { ICONS, MOCK_STAFF, MOCK_SERVICES } from '../../constants';
 import { Card, Button, DateSelectModal } from '../../components/ui';
-import { Moon, Sun, Zap, Sparkles, Activity, Dna, ArrowLeft, Calendar as CalendarIcon, History, Check, Copy, X, Info, BookOpen, MousePointerClick, Settings2, Users, ShieldCheck } from 'lucide-react';
+import { Moon, Sun, Activity, ArrowLeft, Calendar as CalendarIcon, History, Info, BookOpen, MousePointerClick, Settings2, Users, ShieldCheck, X } from 'lucide-react';
 import { StaffManager } from './components/StaffManager'; 
 import { ServiceManager } from './components/ServiceManager'; 
 import { ScheduleViewer } from './components/ScheduleViewer'; 
 import { HistoryManager } from '../../components/HistoryManager';
 import { DBService } from '../../services/db';
+import { useDebounce } from '../../hooks/useDebounce';
+import { Scheduler } from './scheduler';
 
 interface DoctorAppProps {
     onBack: () => void;
@@ -43,6 +44,12 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
   // Info Modal State
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoTab, setInfoTab] = useState<'about' | 'manual'>('manual');
+
+  const debouncedStaff = useDebounce(staff, 1000);
+  const debouncedServices = useDebounce(services, 1000);
+  const debouncedConfig = useDebounce({
+      roleConfigs, month, year, randomizeDays, preventEveryOther, holidays, useFatigueModel, useGeneticAlgorithm, isBlackAndWhite
+  }, 1000);
 
   const MODE = 'doctor';
 
@@ -95,15 +102,14 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
       }
   }, [year, month, isReadOnly]);
 
-  useEffect(() => { if (!isReadOnly && !dataLoading) DBService.saveStaff(MODE, staff); }, [staff, isReadOnly, dataLoading]);
-  useEffect(() => { if (!isReadOnly && !dataLoading) DBService.saveServices(MODE, services); }, [services, isReadOnly, dataLoading]);
+  // Debounced Saving
+  useEffect(() => { if (!isReadOnly && !dataLoading) DBService.saveStaff(MODE, debouncedStaff); }, [debouncedStaff, isReadOnly, dataLoading]);
+  useEffect(() => { if (!isReadOnly && !dataLoading) DBService.saveServices(MODE, debouncedServices); }, [debouncedServices, isReadOnly, dataLoading]);
   useEffect(() => {
       if (!isReadOnly && !dataLoading) {
-          DBService.saveConfig(MODE, {
-              roleConfigs, month, year, randomizeDays, preventEveryOther, holidays, useFatigueModel, useGeneticAlgorithm, isBlackAndWhite
-          });
+          DBService.saveConfig(MODE, debouncedConfig);
       }
-  }, [roleConfigs, month, year, randomizeDays, preventEveryOther, holidays, useFatigueModel, useGeneticAlgorithm, isBlackAndWhite, isReadOnly, dataLoading]);
+  }, [debouncedConfig, isReadOnly, dataLoading]);
 
   useEffect(() => {
     if (isBlackAndWhite) {
@@ -164,7 +170,6 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
 
   const handleExportBackup = () => {
       const data = getAppData();
-      // Pass undefined for Nurse extras
       exportToJSON(data.staff, data.services, data.roleConfigs, data.config);
   };
 
@@ -187,25 +192,27 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
   const handleGenerate = async () => {
     setLoading(true);
     setResult(null);
-    setTimeout(() => {
-      try {
-        const scheduler = new Scheduler(staff, services, {
-          year, month, maxRetries: 1000, 
-          randomizeOrder: randomizeDays, 
-          preventEveryOtherDay: preventEveryOther, 
-          holidays,
-          useFatigueModel,
-          useGeneticAlgorithm
-        }, previousSchedule);
 
-        const res = scheduler.generate();
-        setResult(res);
-      } catch (e) {
-        console.error(e);
-        alert("Çizelge oluşturulamadı. Lütfen kısıtlamaları kontrol edin.");
-      } finally {
-        setLoading(false);
-      }
+    // Use setTimeout to yield to the main thread so the UI can update to "Loading..."
+    setTimeout(() => {
+        try {
+            const config = {
+                year, month, maxRetries: 1000, 
+                randomizeOrder: randomizeDays, 
+                preventEveryOtherDay: preventEveryOther, 
+                holidays,
+                useFatigueModel,
+                useGeneticAlgorithm
+            };
+            const scheduler = new Scheduler(staff, services, config, previousSchedule);
+            const res = scheduler.generate();
+            setResult(res);
+        } catch (error: any) {
+            console.error(error);
+            alert("Çizelge oluşturulamadı: " + error.message);
+        } finally {
+            setLoading(false);
+        }
     }, 100);
   };
 
@@ -405,7 +412,6 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
         )}
       </main>
 
-      {/* Holiday Modal */}
       {showHolidayModal && (
           <DateSelectModal 
               isOpen={showHolidayModal}
