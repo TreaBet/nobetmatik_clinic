@@ -1,5 +1,5 @@
 
-import { Staff, Service, RoleConfig } from '../types';
+import { Staff, Service, RoleConfig, UnitConstraint, Preset } from '../types';
 
 export interface AppData {
     version: string;
@@ -15,7 +15,14 @@ export interface AppData {
         holidays?: number[];
         useFatigueModel?: boolean;
         useGeneticAlgorithm?: boolean;
-    }
+        // Nurse Specific Configs
+        dailyTotalTarget?: number;
+    };
+    // Nurse Specific Extra Data
+    unitConstraints?: UnitConstraint[];
+    customUnits?: string[];
+    customSpecialties?: string[];
+    presets?: Preset[];
 }
 
 export const exportToJSON = (
@@ -27,9 +34,16 @@ export const exportToJSON = (
         year: number; 
         randomizeDays: boolean; 
         preventEveryOther: boolean;
-        holidays: number[];
-        useFatigueModel: boolean;
-        useGeneticAlgorithm: boolean;
+        holidays?: number[];
+        useFatigueModel?: boolean;
+        useGeneticAlgorithm?: boolean;
+        dailyTotalTarget?: number;
+    },
+    extraData?: {
+        unitConstraints?: UnitConstraint[];
+        customUnits?: string[];
+        customSpecialties?: string[];
+        presets?: Preset[];
     }
 ) => {
     const data: AppData = {
@@ -38,7 +52,11 @@ export const exportToJSON = (
         staff,
         services,
         roleConfigs,
-        config
+        config,
+        unitConstraints: extraData?.unitConstraints,
+        customUnits: extraData?.customUnits,
+        customSpecialties: extraData?.customSpecialties,
+        presets: extraData?.presets
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -58,7 +76,7 @@ export const importFromJSON = async (file: File): Promise<AppData> => {
         reader.onload = (e) => {
             try {
                 const json = JSON.parse(e.target?.result as string);
-                if (!json.version || !json.staff || !json.services) {
+                if (!json.staff || !json.services) {
                     reject(new Error("Geçersiz yedek dosyası formatı."));
                 }
                 resolve(json);

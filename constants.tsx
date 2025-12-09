@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Users, Calendar, Settings, ShieldCheck, Download, Trash2, Plus, UserPlus, FileSpreadsheet, AlertTriangle, CheckSquare, Heart, Upload, FileDown, Info } from 'lucide-react';
+import { UnitConstraint } from './types';
 
 export const ICONS = {
     Users: <Users className="w-5 h-5" />,
@@ -38,3 +39,8 @@ export const MOCK_SERVICES = [
   { id: 's3', name: 'Poliklinik', minDailyCount: 1, maxDailyCount: 1, allowedRoles: [1, 2], preferredGroup: 'Farketmez', isEmergency: false },
   { id: 's4', name: 'Yoğun Bakım', minDailyCount: 1, maxDailyCount: 1, allowedRoles: [1], preferredGroup: 'A', isEmergency: false },
 ] as const;
+
+export const DEFAULT_UNIT_CONSTRAINTS: UnitConstraint[] = [
+    { unit: 'Yara Bakım', allowedDays: [1, 2, 3, 4, 5] }, // Weekdays only
+    { unit: 'Transplantasyon', allowedDays: [1, 3, 5] }   // Mon, Wed, Fri
+];

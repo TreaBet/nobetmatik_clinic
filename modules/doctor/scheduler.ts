@@ -1,5 +1,5 @@
 
-import { Staff, Service, DaySchedule, SchedulerConfig, ScheduleResult, ShiftAssignment, Stats } from '../types';
+import { Staff, Service, DaySchedule, SchedulerConfig, ScheduleResult, ShiftAssignment, Stats } from '../../types';
 
 interface DayInfo {
     dayOfWeek: number;
@@ -38,7 +38,7 @@ export class Scheduler {
     this.services = services;
     this.config = config;
     this.previousMonthSchedule = previousMonthSchedule;
-    this.daysInMonth = new Date(config.year, config.month + 1, 0).getDate();
+    this.daysInMonth = new Date(this.config.year, this.config.month + 1, 0).getDate();
     
     // 1. Pre-calculate Day Cache
     this.dayCache = new Array(this.daysInMonth + 1);

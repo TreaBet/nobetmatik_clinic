@@ -1,13 +1,16 @@
 
-
 export type Role = number; // 1, 2, 3, 4 etc.
 export type Group = 'A' | 'B' | 'C' | 'D' | 'Genel';
+export type AppMode = 'doctor' | 'nurse';
 
 export interface Staff {
   id: string;
   name: string;
   role: number; // Numeric seniority level
   group: Group;
+  unit?: string; // Nurse specific: Unit/Department
+  specialty?: string; // Nurse specific: Specialty/Certificate
+  room?: string; // Nurse specific: Room number for conflict avoidance
   quotaService: number; // Target for normal services
   quotaEmergency: number; // Target for emergency services
   weekendLimit: number; // Max weekend shifts
@@ -31,6 +34,7 @@ export interface Service {
   allowedRoles: number[]; // Array of role numbers allowed (e.g. [1, 2])
   priorityRoles?: number[]; // Preferred roles for this service
   preferredGroup?: Group | 'Farketmez';
+  allowedUnits?: string[]; // Nurse specific: Only these units can work here
   isEmergency: boolean; // True if this counts towards Emergency Quota
 }
 
@@ -40,6 +44,7 @@ export interface ShiftAssignment {
   staffName: string;
   role: number;
   group: Group;
+  unit?: string;
   isEmergency: boolean;
 }
 
@@ -47,7 +52,7 @@ export interface DaySchedule {
   day: number;
   assignments: ShiftAssignment[];
   isWeekend: boolean;
-  isHoliday: boolean; // Added for holiday support
+  isHoliday: boolean;
 }
 
 export interface Stats {
@@ -75,6 +80,26 @@ export interface SchedulerConfig {
   randomizeOrder: boolean; // Process days in random order
   preventEveryOtherDay: boolean; // Avoid Day-2 / Day+2 patterns
   holidays: number[]; // Days of month considered public holidays
-  useFatigueModel: boolean; // Enable dynamic stress/fatigue calculations
-  useGeneticAlgorithm: boolean; // Enable evolutionary solver
+  useFatigueModel?: boolean; // Enable dynamic stress/fatigue calculations
+  useGeneticAlgorithm?: boolean; // Enable evolutionary solver
+  
+  // Nurse Specific Configs
+  unitConstraints?: UnitConstraint[];
+  dailyTotalTarget?: number;
+}
+
+export interface UnitConstraint {
+    unit: string;
+    allowedDays: number[]; // 0=Sun, 1=Mon...
+}
+
+export interface Preset {
+    id: string;
+    name: string;
+    staff: Staff[];
+    services: Service[];
+    unitConstraints: UnitConstraint[];
+    dailyTotalTarget: number;
+    customUnits?: string[];
+    customSpecialties?: string[];
 }

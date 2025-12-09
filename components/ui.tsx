@@ -14,19 +14,18 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
   className?: string;
   disabled?: boolean;
+  title?: string;
 }
 
-export const Button: React.FC<ButtonProps> = ({ onClick, children, variant = 'primary', className = "", disabled = false }) => {
-  // v17 Style Gradient Button Base
-  const baseStyle = "px-6 py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.99]";
+export const Button: React.FC<ButtonProps> = ({ onClick, children, variant = 'primary', className = "", disabled = false, title }) => {
+  const baseStyle = "px-6 py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98] select-none";
   
   const variants: Record<string, string> = {
-    // v17 Gradient
-    primary: "bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700 shadow-lg shadow-indigo-500/20",
-    secondary: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 shadow-sm",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200",
+    primary: "bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700 shadow-lg shadow-indigo-500/20 border border-transparent",
+    secondary: "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900 shadow-sm",
+    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 hover:border-red-300",
     success: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 font-medium"
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent"
   };
   
   return (
@@ -34,6 +33,7 @@ export const Button: React.FC<ButtonProps> = ({ onClick, children, variant = 'pr
       onClick={onClick} 
       disabled={disabled}
       className={`${baseStyle} ${variants[variant] || variants.primary} ${className}`}
+      title={title}
     >
       {children}
     </button>
@@ -56,14 +56,15 @@ export const Badge: React.FC<{ children: React.ReactNode; color?: string }> = ({
     );
 };
 
-interface MultiSelectProps {
-  options: number[];
-  selected: number[];
-  onChange: (selected: number[]) => void;
+// Generic MultiSelect to support both numbers (Roles) and strings (Units)
+interface MultiSelectProps<T extends string | number> {
+  options: T[];
+  selected: T[];
+  onChange: (selected: T[]) => void;
   label: string;
 }
 
-export const MultiSelect: React.FC<MultiSelectProps> = ({ options, selected, onChange, label }) => {
+export const MultiSelect = <T extends string | number>({ options, selected, onChange, label }: MultiSelectProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -77,11 +78,17 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ options, selected, onC
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleOption = (option: number) => {
+  const toggleOption = (option: T) => {
     if (selected.includes(option)) {
       onChange(selected.filter(item => item !== option));
     } else {
-      onChange([...selected, option].sort((a, b) => a - b));
+      const newSelected = [...selected, option];
+      // Basic sort if possible
+      if (typeof option === 'number') {
+          onChange(newSelected.sort((a, b) => (a as number) - (b as number)));
+      } else {
+          onChange(newSelected.sort());
+      }
     }
   };
 
@@ -91,16 +98,16 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ options, selected, onC
         onClick={() => setIsOpen(!isOpen)}
         className="w-full border border-gray-300 rounded-lg p-2.5 bg-white cursor-pointer flex justify-between items-center text-sm shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 transition-all multi-select-trigger"
       >
-        <span className={selected.length === 0 ? "text-gray-400 placeholder-text" : "text-gray-800 font-medium value-text"}>
+        <span className={`truncate mr-2 ${selected.length === 0 ? "text-gray-400 placeholder-text" : "text-gray-800 font-medium value-text"}`}>
           {selected.length === 0 ? label : `Seçilen: ${selected.join(', ')}`}
         </span>
-        <ChevronDown className="w-4 h-4 text-gray-500 icon" />
+        <ChevronDown className="w-4 h-4 text-gray-500 icon shrink-0" />
       </div>
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto py-1 multi-select-dropdown">
           {options.length === 0 ? (
-             <div className="p-3 text-xs text-gray-500 text-center">Liste boş. Önce personel ekleyin.</div>
+             <div className="p-3 text-xs text-gray-500 text-center">Liste boş.</div>
           ) : (
              options.map(option => (
                 <div 
@@ -108,10 +115,12 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ options, selected, onC
                   onClick={() => toggleOption(option)}
                   className="flex items-center gap-2 px-3 py-2.5 hover:bg-indigo-50 cursor-pointer text-sm transition-colors multi-select-option"
                 >
-                  <div className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
+                  <div className={`w-4 h-4 border rounded flex items-center justify-center transition-colors shrink-0 ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
                     {selected.includes(option) && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  <span className={selected.includes(option) ? 'text-indigo-900 font-medium' : 'text-gray-700'}>Kıdem {option}</span>
+                  <span className={selected.includes(option) ? 'text-indigo-900 font-medium' : 'text-gray-700'}>
+                      {typeof option === 'number' ? `Kıdem ${option}` : option}
+                  </span>
                 </div>
               ))
           )}

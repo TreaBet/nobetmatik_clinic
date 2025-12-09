@@ -1,9 +1,7 @@
-
-
 import React, { useState, useMemo } from 'react';
-import { Service, Staff, Group, UnitConstraint } from '../types';
-import { Card, Button, Badge, MultiSelect } from './ui';
-import { ICONS } from '../constants';
+import { Service, Staff } from '../../../types';
+import { Card, Button, Badge, MultiSelect } from '../../../components/ui';
+import { ICONS } from '../../../constants';
 import { GripVertical } from 'lucide-react';
 
 interface ServiceManagerProps {
@@ -11,24 +9,16 @@ interface ServiceManagerProps {
     setServices: (services: Service[]) => void;
     staff: Staff[];
     isBlackAndWhite: boolean;
-    // Nurse Specific Props
-    unitConstraints?: UnitConstraint[];
-    setUnitConstraints?: React.Dispatch<React.SetStateAction<UnitConstraint[]>>;
-    dailyTotalTarget?: number;
-    setDailyTotalTarget?: React.Dispatch<React.SetStateAction<number>>;
-    customSpecialties?: string[];
 }
 
 export const ServiceManager: React.FC<ServiceManagerProps> = ({ 
-    services, setServices, staff, isBlackAndWhite,
-    unitConstraints, setUnitConstraints, dailyTotalTarget, setDailyTotalTarget, customSpecialties 
+    services, setServices, staff, isBlackAndWhite 
 }) => {
     const [newService, setNewService] = useState<Partial<Service>>({ 
         name: '', minDailyCount: 1, maxDailyCount: 1, allowedRoles: [1, 2, 3], priorityRoles: [], preferredGroup: 'Farketmez', isEmergency: false 
     });
 
     const [draggedServiceId, setDraggedServiceId] = useState<string | null>(null);
-
     const uniqueRoles = useMemo(() => Array.from(new Set(staff.map(s => s.role))).sort((a: number, b: number) => a - b), [staff]);
 
     const handleAddService = () => {
@@ -41,11 +31,9 @@ export const ServiceManager: React.FC<ServiceManagerProps> = ({
         setServices(services.filter(s => s.id !== id));
     };
 
-    // --- Drag and Drop Handlers ---
     const handleDragStart = (e: React.DragEvent, id: string) => {
         setDraggedServiceId(id);
         e.dataTransfer.effectAllowed = 'move';
-        // Görünmez bir sürükleme imajı veya opaklık ayarı eklenebilir
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -62,53 +50,23 @@ export const ServiceManager: React.FC<ServiceManagerProps> = ({
         const targetIndex = newServices.findIndex(s => s.id === targetId);
 
         if (sourceIndex === -1 || targetIndex === -1) return;
-
-        // Elemanı listeden çıkar ve yeni yerine ekle
         const [movedService] = newServices.splice(sourceIndex, 1);
         newServices.splice(targetIndex, 0, movedService);
-
         setServices(newServices);
         setDraggedServiceId(null);
     };
 
-    // Shared input styles
-    const inputClass = `w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${
-        isBlackAndWhite 
-        ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' 
-        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-    }`;
-    
-    const smallInputClass = `p-2.5 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${
-        isBlackAndWhite 
-        ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' 
-        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-    }`;
+    const inputClass = `w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
+    const smallInputClass = `p-2.5 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className={`flex justify-between items-end p-6 rounded-xl border shadow-sm transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800' : 'bg-white border-gray-200'}`}>
               <div>
-                  <h2 className={`text-2xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-900'}`}>Servis Kuralları</h2>
-                  <p className={`mt-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Servisleri sürükleyip bırakarak sıralamayı değiştirebilirsiniz. Bu sıralama Excel çıktısında kullanılır.</p>
+                  <h2 className={`text-2xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-900'}`}>Doktor Servis Kuralları</h2>
+                  <p className={`mt-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Kıdem ve Grup kısıtlamalarına göre servisleri yapılandırın.</p>
               </div>
             </div>
-            
-            {dailyTotalTarget !== undefined && setDailyTotalTarget && (
-                <Card className={`p-6 border-l-4 transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-orange-500' : 'border-l-orange-500 bg-orange-50/20'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                             <h3 className="font-bold text-lg mb-1">Günlük Toplam Hedef (Hemşire Modu)</h3>
-                             <p className="text-sm opacity-70">Günde toplam kaç hemşire nöbetçi olmalı? (Sistem önce servis min. sayılarını doldurur, sonra buna tamamlar)</p>
-                        </div>
-                        <input 
-                            type="number" 
-                            value={dailyTotalTarget} 
-                            onChange={(e) => setDailyTotalTarget(parseInt(e.target.value))} 
-                            className={`w-24 text-center font-bold text-xl ${inputClass}`}
-                        />
-                    </div>
-                </Card>
-            )}
 
             <Card className={`p-6 border-l-4 transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-emerald-500' : 'border-l-indigo-500'}`}>
               <div className="grid grid-cols-1 md:grid-cols-6 gap-6 items-start">
@@ -128,24 +86,14 @@ export const ServiceManager: React.FC<ServiceManagerProps> = ({
                    </div>
                 </div>
                 <div className="md:col-span-2 space-y-4">
-                   {/* Conditional Role or Unit config */}
-                   {unitConstraints ? (
-                       <div className="space-y-1">
-                           {/* Nurse Mode - Use this area for future Unit constraints per service if needed */}
-                           <p className="text-xs opacity-50 italic">Hemşire modunda roller otomatik yönetilir.</p>
-                       </div>
-                   ) : (
-                       <>
-                           <div className="space-y-1">
-                             <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yazılabilir Kıdemler</label>
-                             <MultiSelect label="Seçiniz..." options={uniqueRoles} selected={newService.allowedRoles || []} onChange={(vals) => setNewService({...newService, allowedRoles: vals})} />
-                           </div>
-                           <div className="space-y-1">
-                             <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Öncelikli Kıdemler</label>
-                             <MultiSelect label="Seçiniz..." options={uniqueRoles} selected={newService.priorityRoles || []} onChange={(vals) => setNewService({...newService, priorityRoles: vals})} />
-                           </div>
-                       </>
-                   )}
+                   <div className="space-y-1">
+                     <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yazılabilir Kıdemler</label>
+                     <MultiSelect label="Seçiniz..." options={uniqueRoles} selected={newService.allowedRoles || []} onChange={(vals) => setNewService({...newService, allowedRoles: vals})} />
+                   </div>
+                   <div className="space-y-1">
+                     <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Öncelikli Kıdemler</label>
+                     <MultiSelect label="Seçiniz..." options={uniqueRoles} selected={newService.priorityRoles || []} onChange={(vals) => setNewService({...newService, priorityRoles: vals})} />
+                   </div>
                 </div>
                  <div>
                   <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Grup</label>
@@ -160,22 +108,10 @@ export const ServiceManager: React.FC<ServiceManagerProps> = ({
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {services.map((s, index) => (
-                <div
-                    key={s.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, s.id)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, s.id)}
-                    className={`transition-transform duration-200 ${draggedServiceId === s.id ? 'opacity-50 scale-95' : 'opacity-100'}`}
-                >
+              {services.map((s) => (
+                <div key={s.id} draggable onDragStart={(e) => handleDragStart(e, s.id)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, s.id)} className={`transition-transform duration-200 ${draggedServiceId === s.id ? 'opacity-50 scale-95' : 'opacity-100'}`}>
                     <Card className={`p-5 relative group transition-all border-l-4 cursor-grab active:cursor-grabbing hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-slate-600' : (s.isEmergency ? 'border-l-rose-500' : 'border-l-indigo-500')}`}>
-                      
-                      {/* Drag Handle Icon */}
-                      <div className={`absolute top-4 left-3 ${isBlackAndWhite ? 'text-slate-600' : 'text-gray-300'}`}>
-                          <GripVertical className="w-5 h-5" />
-                      </div>
-
+                      <div className={`absolute top-4 left-3 ${isBlackAndWhite ? 'text-slate-600' : 'text-gray-300'}`}><GripVertical className="w-5 h-5" /></div>
                       <button onClick={() => handleDeleteService(s.id)} className={`absolute top-4 right-4 transition-colors ${isBlackAndWhite ? 'text-gray-500 hover:text-red-400' : 'text-gray-300 hover:text-red-500'}`}>{ICONS.Trash}</button>
                       
                       <div className="flex items-center gap-3 mb-2 pl-6">
@@ -184,7 +120,7 @@ export const ServiceManager: React.FC<ServiceManagerProps> = ({
                       </div>
                       <div className={`space-y-2 text-sm mt-4 p-3 rounded-lg ml-6 ${isBlackAndWhite ? '!bg-slate-800 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
                          <div className="flex justify-between items-center"><span className={`text-xs font-semibold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-400'}`}>Kişi Sayısı</span><span className={`font-bold px-2 py-0.5 rounded shadow-sm border ${isBlackAndWhite ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white text-gray-900 border-gray-200'}`}>{s.minDailyCount}-{s.maxDailyCount}</span></div>
-                         {!unitConstraints && <div className="flex justify-between items-center"><span className={`text-xs font-semibold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-400'}`}>Roller</span><span className="font-mono text-xs">{s.allowedRoles.join(', ')}</span></div>}
+                         <div className="flex justify-between items-center"><span className={`text-xs font-semibold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-400'}`}>Roller</span><span className="font-mono text-xs">{s.allowedRoles.join(', ')}</span></div>
                          {s.preferredGroup && s.preferredGroup !== 'Farketmez' && (
                              <div className="flex justify-between items-center"><span className={`text-xs font-semibold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-400'}`}>Grup</span><span className="font-mono text-xs font-bold text-indigo-600">{s.preferredGroup}</span></div>
                          )}

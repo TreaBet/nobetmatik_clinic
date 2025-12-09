@@ -1,9 +1,11 @@
 
+
 import React, { useState, useRef, useMemo } from 'react';
-import { Staff, RoleConfig, Group } from '../types';
+import { Staff, RoleConfig, Group, Preset } from '../types';
 import { Card, Button, Badge, DateSelectModal } from './ui';
 import { ICONS } from '../constants';
-import { RefreshCw, FileJson, Upload } from 'lucide-react';
+import { RefreshCw, FileJson, Upload, Check, X, Download, Save, Trash2 } from 'lucide-react';
+import { AppData } from '../services/backupService';
 
 interface StaffManagerProps {
     staff: Staff[];
@@ -17,27 +19,42 @@ interface StaffManagerProps {
     handleExportBackup: () => void;
     isBlackAndWhite: boolean;
     daysInMonth: number;
+    getAppData: () => AppData;
+    restoreAppData: (data: AppData) => void;
+    
+    // Optional Nurse Props
+    customUnits?: string[];
+    setCustomUnits?: React.Dispatch<React.SetStateAction<string[]>>;
+    customSpecialties?: string[];
+    setCustomSpecialties?: React.Dispatch<React.SetStateAction<string[]>>;
+    onLoadPreset?: (preset: Preset) => void;
+    savedPresets?: Preset[];
+    onAddPreset?: (preset: Preset) => void;
+    onDeletePreset?: (id: string) => void;
 }
 
 export const StaffManager: React.FC<StaffManagerProps> = ({
     staff, setStaff, roleConfigs, setRoleConfigs,
     handleResetData, handleFileUpload, generateTemplate,
-    handleImportBackup, handleExportBackup, isBlackAndWhite, daysInMonth
+    handleImportBackup, handleExportBackup, isBlackAndWhite, daysInMonth,
+    customUnits, setCustomUnits, customSpecialties, setCustomSpecialties,
+    onLoadPreset, savedPresets, onAddPreset, onDeletePreset
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const backupInputRef = useRef<HTMLInputElement>(null);
     const [newStaff, setNewStaff] = useState<Partial<Staff>>({ 
-        name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true
+        name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true, unit: '', specialty: ''
     });
 
     const [dateModal, setDateModal] = useState<{ isOpen: boolean, staffId: string, type: 'off' | 'request' } | null>(null);
+    const [presetName, setPresetName] = useState("");
 
     const uniqueRoles = useMemo(() => Array.from(new Set(staff.map(s => s.role))).sort((a: number, b: number) => a - b), [staff]);
 
     const handleAddStaff = () => {
         if (!newStaff.name) return;
         setStaff([...staff, { ...newStaff, id: Date.now().toString(), isActive: true } as Staff]);
-        setNewStaff({ name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true });
+        setNewStaff({ name: '', role: 2, group: 'Genel', quotaService: 5, quotaEmergency: 2, weekendLimit: 2, offDays: [], requestedDays: [], isActive: true, unit: '', specialty: '' });
     };
 
     const handleDeleteStaff = (id: string) => {
@@ -93,7 +110,22 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
         }));
     };
 
-    // Shared input styles for dark/light mode with !important to prevent overrides
+    const handleSavePreset = () => {
+        if(!presetName || !onAddPreset) return;
+        onAddPreset({
+            id: Date.now().toString(),
+            name: presetName,
+            staff,
+            services: [], // Services not captured here
+            unitConstraints: [],
+            dailyTotalTarget: 0,
+            customUnits,
+            customSpecialties
+        });
+        setPresetName("");
+    };
+
+    // Shared input styles
     const inputClass = `w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${
         isBlackAndWhite 
         ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' 
@@ -141,6 +173,24 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                  </Button>
               </div>
             </div>
+
+            {/* Presets Section (Nurse Only mostly) */}
+            {savedPresets && savedPresets.length > 0 && onLoadPreset && (
+                 <Card className={`p-4 border transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800' : 'bg-white border-gray-200'}`}>
+                    <h3 className={`font-bold text-sm mb-3 ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>Kayıtlı Şablonlar</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {savedPresets.map(preset => (
+                            <div key={preset.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isBlackAndWhite ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                                <span className={`text-sm ${isBlackAndWhite ? 'text-white' : 'text-gray-800'}`}>{preset.name}</span>
+                                <button onClick={() => onLoadPreset(preset)} className="text-indigo-500 hover:text-indigo-600"><Download className="w-3.5 h-3.5"/></button>
+                                {onDeletePreset && (
+                                    <button onClick={() => onDeletePreset(preset.id)} className="text-red-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5"/></button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                 </Card>
+            )}
 
             {/* Role Configs */}
             {staff.length > 0 && (
@@ -207,12 +257,25 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                          <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>KIDEM</label>
                          <input type="number" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: parseInt(e.target.value)})} className={inputClass} />
                     </div>
-                    <div className="md:col-span-2">
-                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>GRUP</label>
-                        <select value={newStaff.group} onChange={e => setNewStaff({...newStaff, group: e.target.value as Group})} className={inputClass}>
-                            <option value="Genel">Genel</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
-                        </select>
-                    </div>
+                    
+                    {/* Conditional Rendering for Nurse Fields */}
+                    {customUnits ? (
+                        <div className="md:col-span-2">
+                             <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>BİRİM</label>
+                             <select value={newStaff.unit} onChange={e => setNewStaff({...newStaff, unit: e.target.value})} className={inputClass}>
+                                 <option value="">Seçiniz</option>
+                                 {customUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                             </select>
+                        </div>
+                    ) : (
+                        <div className="md:col-span-2">
+                            <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>GRUP</label>
+                            <select value={newStaff.group} onChange={e => setNewStaff({...newStaff, group: e.target.value as Group})} className={inputClass}>
+                                <option value="Genel">Genel</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                            </select>
+                        </div>
+                    )}
+
                     <div className="md:col-span-3">
                          <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>HEDEFLER (SRV / ACİL / HS)</label>
                          <div className="flex gap-2">
@@ -240,29 +303,40 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                             : `${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-gray-300 bg-gray-50 opacity-60'}`
                         }`}
                     >
-                        {/* Modern Toggle Switch */}
-                        <div className="absolute top-3 left-3 flex items-center" title={person.isActive !== false ? "Nöbete Dahil" : "Nöbet Dışı"}>
-                            <button 
+                        {/* Improved Toggle Switch */}
+                        <div className="absolute top-4 left-4 z-10" title={person.isActive !== false ? "Personel Aktif" : "Personel Pasif"}>
+                            <button
                                 onClick={() => toggleStaffActive(person.id)}
-                                className={`w-10 h-5 flex items-center rounded-full p-1 transition-all duration-300 ${
-                                    person.isActive !== false 
-                                    ? (isBlackAndWhite ? 'bg-indigo-600' : 'bg-indigo-500') 
-                                    : (isBlackAndWhite ? 'bg-slate-700' : 'bg-gray-300')
-                                }`}
+                                className={`
+                                    group relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2
+                                    ${person.isActive !== false 
+                                        ? (isBlackAndWhite ? 'bg-emerald-600' : 'bg-indigo-600') 
+                                        : (isBlackAndWhite ? 'bg-slate-700' : 'bg-gray-200 hover:bg-gray-300')
+                                    }
+                                `}
                             >
-                                <div 
-                                    className={`bg-white w-3.5 h-3.5 rounded-full shadow-md transform transition-transform duration-300 ${
-                                        person.isActive !== false ? 'translate-x-4.5' : ''
-                                    }`} 
-                                    style={{ transform: person.isActive !== false ? 'translateX(1.2rem)' : 'translateX(0)' }}
-                                />
+                                <span className="sr-only">Durum Değiştir</span>
+                                <span
+                                    className={`
+                                        pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                                        ${person.isActive !== false ? 'translate-x-5' : 'translate-x-0'}
+                                    `}
+                                >
+                                    <span className={`absolute inset-0 flex h-full w-full items-center justify-center transition-opacity ${person.isActive !== false ? 'opacity-0 duration-100 ease-out' : 'opacity-100 duration-200 ease-in'}`} aria-hidden="true">
+                                        <X className="h-3 w-3 text-gray-400" strokeWidth={3} />
+                                    </span>
+                                    <span className={`absolute inset-0 flex h-full w-full items-center justify-center transition-opacity ${person.isActive !== false ? 'opacity-100 duration-200 ease-in' : 'opacity-0 duration-100 ease-out'}`} aria-hidden="true">
+                                        <Check className={`h-3 w-3 ${isBlackAndWhite ? 'text-emerald-600' : 'text-indigo-600'}`} strokeWidth={3} />
+                                    </span>
+                                </span>
                             </button>
                         </div>
 
                         <button onClick={() => handleDeleteStaff(person.id)} className={`absolute top-3 right-3 transition-colors ${isBlackAndWhite ? 'text-gray-500 hover:text-red-400' : 'text-gray-300 hover:text-red-500'}`}>{ICONS.Trash}</button>
                         
-                        <div className="flex items-center gap-3 mb-3 ml-8">
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                        {/* Content moved to avoid overlap with switch */}
+                        <div className="flex items-center gap-3 mb-3 ml-16">
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
                                  isBlackAndWhite 
                                  ? (person.isActive !== false ? 'bg-indigo-900 text-indigo-200' : 'bg-slate-800 text-slate-500') 
                                  : (person.isActive !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-400')
@@ -270,11 +344,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                  {person.name.charAt(0)}
                              </div>
                              <div>
-                                 <h4 className={`font-bold ${person.isActive === false && 'line-through'}`}>{person.name}</h4>
+                                 <h4 className={`font-bold truncate max-w-[140px] ${person.isActive === false && 'line-through'}`} title={person.name}>{person.name}</h4>
                                  <div className="flex gap-2 text-xs opacity-70">
                                      <span>Kıdem: {person.role}</span>
                                      <span>•</span>
-                                     <span>Grup: {person.group}</span>
+                                     <span>{customUnits && person.unit ? person.unit : `Grup: ${person.group}`}</span>
                                  </div>
                              </div>
                         </div>
@@ -305,6 +379,23 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                     </Card>
                 ))}
             </div>
+            
+            {/* Preset Save Section (Optional) */}
+            {onAddPreset && savedPresets && (
+                <div className={`mt-8 pt-4 border-t flex items-center gap-3 ${isBlackAndWhite ? 'border-slate-800' : 'border-gray-200'}`}>
+                    <input 
+                        type="text" 
+                        value={presetName}
+                        onChange={(e) => setPresetName(e.target.value)}
+                        placeholder="Şablon adı (Örn: Mart 2025)..."
+                        className={inputClass}
+                        style={{ maxWidth: '250px' }}
+                    />
+                    <Button onClick={handleSavePreset} className="h-[42px] px-4" disabled={!presetName}>
+                        <Save className="w-4 h-4 mr-2"/> Şablon Olarak Kaydet
+                    </Button>
+                </div>
+            )}
 
             {/* Date Modal */}
             {dateModal && (
