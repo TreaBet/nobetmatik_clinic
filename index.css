@@ -9,11 +9,20 @@
   color-scheme: light;
 }
 
+.high-contrast {
+  color-scheme: dark;
+}
+
 html,
 body {
   @apply bg-gray-100 text-slate-800 antialiased min-h-screen;
   background-color: #f3f4f6;
   color: #1f2937;
+}
+
+body.high-contrast {
+  background-color: #020617; /* slate-950 */
+  color: #e2e8f0; /* slate-200 */
 }
 
 #root {
@@ -49,7 +58,7 @@ body {
 .hover-lift:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 10; /* Ensure it lifts above siblings */
+  z-index: 10;
 }
 
 /* ================= SCROLLBAR ================= */
@@ -72,21 +81,21 @@ body {
 
 /* Dark Mode Scrollbar Overrides */
 .high-contrast .custom-scrollbar::-webkit-scrollbar-track {
-  background: #0f172a; /* Slate-900 */
+  background: #0f172a; /* slate-900 */
 }
 .high-contrast .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155; /* Slate-700 */
+  background: #334155; /* slate-700 */
 }
 .high-contrast .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569; /* Slate-600 */
+  background: #475569; /* slate-600 */
 }
 
 /* ================= COMPONENT DARK MODE OVERRIDES ================= */
 
 .high-contrast .card-base {
     background-color: #0f172a !important; /* slate-900 */
-    border-color: #334155 !important; /* slate-700 */
-    color: #f8fafc !important;
+    border-color: #1e293b !important; /* slate-800 */
+    color: #e2e8f0 !important;
 }
 
 /* MultiSelect Dark Mode */
@@ -153,10 +162,10 @@ body {
 /* ================= REPORT TABLE ================= */
 
 .report-table-container {
-  overflow-x: auto !important; /* Ensure scrolling works */
+  overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
   background-color: white;
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-property: color, background-color, border-color;
   transition-duration: 300ms;
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -174,10 +183,10 @@ body {
   top: 0;
   z-index: 20;
   background-color: white;
-  color: #111827; /* gray-900 */
+  color: #111827;
   padding: 0.75rem 0.5rem;
   text-align: left;
-  font-size: 0.75rem; /* text-xs for cleaner headers */
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -193,7 +202,6 @@ body {
   vertical-align: top;
 }
 
-/* Sticky First Column */
 .report-table .sticky-col {
   position: sticky;
   left: 0;
@@ -209,23 +217,15 @@ body {
   padding: 0;
 }
 
-/* Weekend Styling */
 .report-table tr.is-weekend td {
-  background-color: #fafafa; 
+  background-color: #e2e8f0;
 }
 .report-table tr.is-weekend .sticky-col {
-  background-color: #fafafa;
+  background-color: #e2e8f0;
 }
 
-/* Zebra Styling (Weekdays only) */
-.report-table tr.zebra-row td,
-.report-table tr.zebra-row .sticky-col {
-  background-color: #f9fafb; /* gray-50 */
-}
-
-/* Hover Effect */
 .report-table tbody tr:hover td {
-  background-color: #f1f5f9; /* slate-100 */
+  background-color: #f1f5f9;
 }
 .report-table tbody tr:hover .sticky-col {
   background-color: #f1f5f9;
@@ -234,11 +234,11 @@ body {
 /* ================= DARK MODE TABLE OVERRIDES ================= */
 
 .high-contrast .report-table-container {
-  @apply border border-slate-700 bg-slate-900;
+  @apply border border-slate-800 bg-slate-900;
 }
 
 .high-contrast .report-table {
-  @apply bg-slate-900 divide-slate-700;
+  @apply bg-slate-900 divide-slate-800;
 }
 
 .high-contrast .report-table thead th {
@@ -246,19 +246,14 @@ body {
 }
 
 .high-contrast .report-table tbody td {
-  color: #cbd5e1; /* Slate-300 */
+  color: #cbd5e1;
   @apply border-slate-800 bg-slate-900;
 }
 
 .high-contrast .report-table tr.is-weekend td,
 .high-contrast .report-table tr.is-weekend .sticky-col {
-  @apply bg-slate-800/50 text-slate-300 border-slate-800;
-}
-
-/* Dark Mode Zebra */
-.high-contrast .report-table tr.zebra-row td,
-.high-contrast .report-table tr.zebra-row .sticky-col {
-  background-color: #162032; /* Slightly lighter than base slate-900/950 */
+  background-color: #0b1120; /* Darker than slate-950 for contrast */
+  @apply border-slate-800 text-slate-400;
 }
 
 .high-contrast .report-table tbody .sticky-col {
@@ -274,68 +269,33 @@ body {
   background-color: #1e293b; /* Slate-800 */
 }
 
-/* ================= LIST SLOT STYLES (CLEAN LIST WITH DOTS) ================= */
+/* ================= LIST SLOT STYLES ================= */
 
 .slot-list-item {
   @apply px-1.5 py-1.5 flex items-center gap-2 w-full text-left truncate transition-all cursor-default select-none text-xs font-semibold tracking-tight;
-  /* Clean look: no background */
 }
 
 .slot-list-item.clickable:hover:not(.slot-selected):not(.slot-dragging) {
   @apply bg-gray-50 rounded;
 }
 
-/* Text Colors */
-.text-normal {
-  @apply text-slate-700;
-}
+.text-normal { @apply text-slate-700; }
+.text-emergency { @apply text-slate-900; }
+.text-empty { @apply text-rose-500 italic font-normal opacity-80; }
 
-.text-emergency {
-  @apply text-slate-900;
-}
-
-.text-empty {
-  @apply text-rose-500 italic font-normal opacity-80;
-}
-
-/* States */
-.slot-selected {
-  @apply bg-indigo-50 text-indigo-700 font-bold rounded;
-}
-
-.slot-dragging {
-  @apply opacity-50 bg-gray-50 border-dashed border border-gray-300 rounded;
-}
-
-.slot-drag-over {
-  @apply bg-emerald-50 ring-1 ring-emerald-500 rounded;
-}
+.slot-selected { @apply bg-indigo-50 text-indigo-700 font-bold rounded; }
+.slot-dragging { @apply opacity-50 bg-gray-50 border-dashed border border-gray-300 rounded; }
+.slot-drag-over { @apply bg-emerald-50 ring-1 ring-emerald-500 rounded; }
 
 /* Dark Mode Slots */
 .high-contrast .slot-list-item.clickable:hover:not(.slot-selected):not(.slot-dragging) {
   @apply bg-white/5;
 }
 
-.high-contrast .text-normal {
-  @apply text-slate-300;
-}
+.high-contrast .text-normal { @apply text-slate-300; }
+.high-contrast .text-emergency { @apply text-white; }
+.high-contrast .text-empty { @apply text-rose-400; }
 
-.high-contrast .text-emergency {
-  @apply text-white;
-}
-
-.high-contrast .text-empty {
-  @apply text-rose-400;
-}
-
-.high-contrast .slot-selected {
-  @apply bg-indigo-900/40 text-indigo-200;
-}
-
-.high-contrast .slot-dragging {
-  @apply border-slate-600 bg-slate-800;
-}
-
-.high-contrast .slot-drag-over {
-  @apply bg-emerald-900/20 ring-emerald-500;
-}
+.high-contrast .slot-selected { @apply bg-indigo-900/40 text-indigo-200; }
+.high-contrast .slot-dragging { @apply border-slate-600 bg-slate-800; }
+.high-contrast .slot-drag-over { @apply bg-emerald-900/20 ring-emerald-500; }

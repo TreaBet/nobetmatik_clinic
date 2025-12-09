@@ -8,7 +8,7 @@ import { generateShareLink, parseShareLink } from '../../services/shareService';
 import { Staff, Service, RoleConfig, ScheduleResult, DaySchedule } from '../../types';
 import { ICONS, MOCK_STAFF, MOCK_SERVICES } from '../../constants';
 import { Card, Button, DateSelectModal } from '../../components/ui';
-import { Moon, Sun, Zap, Sparkles, Activity, Dna, ArrowLeft, Calendar as CalendarIcon, History, Check, Copy, X } from 'lucide-react';
+import { Moon, Sun, Zap, Sparkles, Activity, Dna, ArrowLeft, Calendar as CalendarIcon, History, Check, Copy, X, Info, BookOpen, MousePointerClick, Settings2, Users, ShieldCheck } from 'lucide-react';
 import { StaffManager } from './components/StaffManager'; 
 import { ServiceManager } from './components/ServiceManager'; 
 import { ScheduleViewer } from './components/ScheduleViewer'; 
@@ -39,6 +39,10 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
+  
+  // Info Modal State
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoTab, setInfoTab] = useState<'about' | 'manual'>('manual');
 
   const MODE = 'doctor';
 
@@ -251,59 +255,58 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
   return (
     <div className={`min-h-screen font-sans pb-20 transition-all duration-300 ${isBlackAndWhite ? 'bg-slate-950 text-slate-100 high-contrast' : 'bg-gray-100 text-gray-800'}`}>
       
-      <header className={`sticky top-0 z-30 mb-6 ${isBlackAndWhite ? '!bg-slate-900 !border-b border-slate-800 text-white' : 'bg-white border-b border-gray-200 shadow-sm'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <Button variant="ghost" onClick={onBack} className={isBlackAndWhite ? 'text-white hover:bg-slate-800' : 'text-gray-600'}>
-                  <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className={`p-2 rounded-xl shrink-0 ${isBlackAndWhite ? 'bg-white text-black' : 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/30'}`}>
-                {ICONS.Shield}
-              </div>
-              <div className={isBlackAndWhite ? 'text-white' : ''}>
-                <h1 className="text-xl font-bold leading-none tracking-tight">Nöbetmatik</h1>
-                <span className={`text-xs font-bold tracking-wider uppercase ${isBlackAndWhite ? 'text-slate-400' : 'text-indigo-600'}`}>Doktor Modülü</span>
-              </div>
+      <nav className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors duration-500 ${isBlackAndWhite ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-gray-200 shadow-sm'}`}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16 items-center">
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" onClick={onBack} className={isBlackAndWhite ? 'text-white hover:bg-slate-800' : 'text-gray-600'}>
+                             <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                        <div className={`p-2 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 shadow-lg shadow-indigo-500/30`}>
+                             <ShieldCheck className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className={`text-xl font-bold tracking-tight ${isBlackAndWhite ? 'text-white' : 'text-slate-900'}`}>Nöbetmatik</h1>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-600'}`}>HEKİM MODÜLÜ</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                         <button onClick={() => setIsBlackAndWhite(!isBlackAndWhite)} className={`p-2 rounded-full transition-colors ${isBlackAndWhite ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`} title={isBlackAndWhite ? "Aydınlık Mod" : "Karanlık Mod"}>
+                            {isBlackAndWhite ? <Sun className="w-5 h-5"/> : <Moon className="w-5 h-5"/>}
+                         </button>
+                         <button onClick={() => setShowInfoModal(true)} className={`p-2 rounded-full transition-colors ${isBlackAndWhite ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}>
+                            <Info className="w-5 h-5" />
+                         </button>
+                    </div>
+                </div>
             </div>
-            
-            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-              {!isReadOnly && (
-                  <nav className={`flex p-1 rounded-xl shrink-0 ${isBlackAndWhite ? '!bg-slate-800' : 'bg-gray-100 border border-gray-200'}`}>
-                    {(['staff', 'services', 'generate', 'history'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-3 md:px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap hover-lift ${
-                          activeTab === tab 
-                            ? (isBlackAndWhite ? 'bg-slate-600 text-white shadow' : 'bg-white text-indigo-700 shadow-sm ring-1 ring-gray-200') 
-                            : (isBlackAndWhite ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')
-                        }`}
-                      >
-                         {tab === 'staff' && <span className="flex items-center gap-2">{ICONS.Users} Personel</span>}
-                         {tab === 'services' && <span className="flex items-center gap-2">{ICONS.Settings} Servisler</span>}
-                         {tab === 'generate' && <span className="flex items-center gap-2">{ICONS.Calendar} Çizelge</span>}
-                         {tab === 'history' && <span className="flex items-center gap-2"><History className="w-4 h-4"/> Geçmiş</span>}
-                      </button>
-                    ))}
-                  </nav>
-              )}
-              
-              <button onClick={() => setIsBlackAndWhite(!isBlackAndWhite)} className={`p-2 rounded-lg transition-colors shrink-0 ${isBlackAndWhite ? 'bg-slate-800 text-yellow-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                {isBlackAndWhite ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+            {!isReadOnly && (
+                <div className={`border-t ${isBlackAndWhite ? 'border-slate-800' : 'border-gray-100'}`}>
+                    <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto custom-scrollbar">
+                         <button onClick={() => setActiveTab('staff')} className={`py-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'staff' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : (isBlackAndWhite ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-gray-500 hover:text-gray-700')}`}>
+                            <Users className="w-4 h-4" /> Personel
+                         </button>
+                         <button onClick={() => setActiveTab('services')} className={`py-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'services' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : (isBlackAndWhite ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-gray-500 hover:text-gray-700')}`}>
+                             <Settings2 className="w-4 h-4" /> Servisler
+                         </button>
+                         <button onClick={() => setActiveTab('generate')} className={`py-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'generate' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : (isBlackAndWhite ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-gray-500 hover:text-gray-700')}`}>
+                             <CalendarIcon className="w-4 h-4" /> Çizelge
+                         </button>
+                         <button onClick={() => setActiveTab('history')} className={`py-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'history' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : (isBlackAndWhite ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-gray-500 hover:text-gray-700')}`}>
+                             <History className="w-4 h-4" /> Geçmiş
+                         </button>
+                    </div>
+                </div>
+            )}
+        </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {!isReadOnly && activeTab === 'staff' && (
-             <StaffManager 
-                staff={staff} 
-                setStaff={setStaff} 
-                roleConfigs={roleConfigs} 
-                setRoleConfigs={setRoleConfigs} 
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        
+        {activeTab === 'staff' && (
+            <StaffManager 
+                staff={staff} setStaff={setStaff}
+                roleConfigs={roleConfigs} setRoleConfigs={setRoleConfigs}
                 handleResetData={handleResetData}
                 handleFileUpload={handleFileUpload}
                 generateTemplate={generateTemplate}
@@ -311,179 +314,166 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
                 handleExportBackup={handleExportBackup}
                 isBlackAndWhite={isBlackAndWhite}
                 daysInMonth={daysInMonth}
-             />
-        )}
-
-        {!isReadOnly && activeTab === 'services' && (
-             <ServiceManager 
-                services={services} 
-                setServices={setServices} 
-                staff={staff} 
-                isBlackAndWhite={isBlackAndWhite}
-             />
-        )}
-
-        {!isReadOnly && activeTab === 'history' && (
-            <HistoryManager 
-                onLoad={handleLoadHistory}
-                isBlackAndWhite={isBlackAndWhite}
-                mode={MODE}
             />
         )}
 
-        {(activeTab === 'generate' || isReadOnly) && (
+        {activeTab === 'services' && (
+            <ServiceManager 
+                services={services} setServices={setServices}
+                staff={staff}
+                isBlackAndWhite={isBlackAndWhite}
+            />
+        )}
+
+        {activeTab === 'generate' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {!isReadOnly && (
-                    <Card className={`p-6 border-l-4 transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
-                        <div className="flex flex-col gap-6">
-                            <div className="flex flex-col lg:flex-row gap-6 items-end">
-                                <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="space-y-1">
-                                        <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Ay</label>
-                                        <select value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
-                                            {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map((m, i) => (
-                                                <option key={i} value={i}>{m}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className={`block text-xs font-bold uppercase tracking-wide ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yıl</label>
-                                        <input type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none ${isBlackAndWhite ? '!bg-slate-800 !border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
-                                    </div>
-                                    <div className="space-y-1 flex flex-col justify-end">
-                                        <Button variant="secondary" onClick={() => setShowHolidayModal(true)} className={`w-full text-xs h-[42px] ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700 hover:!bg-slate-700 hover:!text-white' : ''}`}>
-                                            <CalendarIcon className="w-4 h-4 text-red-500" /> 
-                                            {holidays.length > 0 ? `${holidays.length} Tatil Seçili` : 'Tatilleri Seç'}
-                                        </Button>
-                                    </div>
-                                    <div className="space-y-1 flex flex-col justify-end h-full gap-2 mt-auto pb-0.5 col-span-2 md:col-span-1">
-                                         <div className={`flex items-center gap-2 p-1.5 rounded-lg border w-full flex-1 ${isBlackAndWhite ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                                             <input type="checkbox" id="chkRandom" checked={randomizeDays} onChange={e => setRandomizeDays(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" />
-                                             <label htmlFor="chkRandom" className={`text-[10px] md:text-xs font-bold cursor-pointer select-none ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>Rastgele Dağıt</label>
-                                         </div>
-                                         <div className={`flex items-center gap-2 p-1.5 rounded-lg border w-full flex-1 ${isBlackAndWhite ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                                             <input type="checkbox" id="chkEveryOther" checked={preventEveryOther} onChange={e => setPreventEveryOther(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" />
-                                             <label htmlFor="chkEveryOther" className={`text-[10px] md:text-xs font-bold cursor-pointer select-none ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>Günaşırı Önle</label>
-                                         </div>
-                                    </div>
-                                </div>
-                                <Button 
-                                    onClick={handleGenerate} 
-                                    disabled={loading} 
-                                    className={`w-full lg:w-48 h-[100px] lg:h-auto self-stretch relative overflow-hidden group hover-lift ${isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}`}
-                                >
-                                    {loading ? (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                                            <span className="text-xs">
-                                                {useGeneticAlgorithm ? 'Evrimleşiyor...' : 'Simülasyon...'}
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-1">
-                                            <Zap className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                            <span>Çizelge Oluştur</span>
-                                        </div>
-                                    )}
-                                </Button>
-                            </div>
-
-                            <div className={`pt-4 border-t ${isBlackAndWhite ? 'border-slate-800' : 'border-gray-100'}`}>
-                                <h4 className={`text-xs font-bold uppercase mb-3 flex items-center gap-2 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-400'}`}>
-                                    <Sparkles className="w-3.5 h-3.5" /> Gelişmiş Özellikler (İsteğe Bağlı)
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${useFatigueModel ? (isBlackAndWhite ? 'bg-indigo-900/30 border-indigo-500/50' : 'bg-indigo-50 border-indigo-200 shadow-sm') : (isBlackAndWhite ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200 grayscale opacity-80')}`} onClick={() => setUseFatigueModel(!useFatigueModel)}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-full ${useFatigueModel ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                                <Activity className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <span className={`block text-sm font-bold ${isBlackAndWhite ? 'text-gray-200' : 'text-gray-700'}`}>Yorgunluk Modeli</span>
-                                                <span className="text-[11px] opacity-60">Stres seviyesine göre akıllı dağıtım</span>
-                                            </div>
-                                        </div>
-                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${useFatigueModel ? 'bg-indigo-500 border-indigo-500' : 'border-gray-400'}`}>
-                                            {useFatigueModel && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${useGeneticAlgorithm ? (isBlackAndWhite ? 'bg-purple-900/30 border-purple-500/50' : 'bg-purple-50 border-purple-200 shadow-sm') : (isBlackAndWhite ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200 grayscale opacity-80')}`} onClick={() => setUseGeneticAlgorithm(!useGeneticAlgorithm)}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-full ${useGeneticAlgorithm ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                                <Dna className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <span className={`block text-sm font-bold ${isBlackAndWhite ? 'text-gray-200' : 'text-gray-700'}`}>Genetik Algoritma (Beta)</span>
-                                                <span className="text-[11px] opacity-60">Evrimsel yöntemle en iyi sonucu arar</span>
-                                            </div>
-                                        </div>
-                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${useGeneticAlgorithm ? 'bg-purple-500 border-purple-500' : 'border-gray-400'}`}>
-                                            {useGeneticAlgorithm && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <Card className={`p-6 border-l-4 transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                        <div>
+                            <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>AY</label>
+                            <select value={month} onChange={e => setMonth(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                                {Array.from({length: 12}, (_, i) => i).map(m => (
+                                    <option key={m} value={m}>{new Date(2024, m).toLocaleString('tr-TR', { month: 'long' })}</option>
+                                ))}
+                            </select>
                         </div>
-                    </Card>
-                )}
-                
-                <DateSelectModal 
-                    isOpen={showHolidayModal}
-                    onClose={() => setShowHolidayModal(false)}
-                    title="Resmi Tatil Günlerini Seçin"
-                    selectedDays={holidays}
-                    onSave={setHolidays}
-                    daysInMonth={daysInMonth}
-                    color="red"
-                />
+                        <div>
+                            <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>YIL</label>
+                            <input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 pb-1">
+                             <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <input type="checkbox" checked={randomizeDays} onChange={e => setRandomizeDays(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <span>Rastgele Sıra</span>
+                             </label>
+                             <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <input type="checkbox" checked={preventEveryOther} onChange={e => setPreventEveryOther(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <span>Gün Aşırı Engelle</span>
+                             </label>
+                        </div>
 
-                {result && (
-                    <div className="relative group">
-                         {!isReadOnly && (
-                            <div className="flex justify-end mb-2">
-                                <Button variant="secondary" onClick={handleArchiveMonth} className={`text-xs ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700 hover:!bg-slate-700' : ''}`}>
-                                    <History className="w-4 h-4 mr-2" /> Bu Ayı Geçmişe Kaydet
-                                </Button>
-                            </div>
-                         )}
+                        <div className="flex gap-2">
+                            <Button onClick={() => setShowHolidayModal(true)} variant="secondary" className={`flex-1 h-[42px] ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700' : ''}`}>
+                                Tatiller ({holidays.length})
+                            </Button>
+                            <Button onClick={handleGenerate} disabled={loading} className={`flex-1 h-[42px] ${isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}`}>
+                                {loading ? '...' : 'Oluştur'}
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+
+                {loading && (
+                     <div className="py-20 text-center animate-pulse">
+                        <div className={`text-5xl mb-4 font-bold ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-600'}`}>...</div>
+                        <h3 className={`text-xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-800'}`}>Hesaplanıyor</h3>
+                        <p className={isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}>Monte Carlo simülasyonu çalışıyor.</p>
+                     </div>
+                )}
+
+                {!loading && result && (
+                    <>
+                        <div className="flex justify-end mb-2">
+                             <Button variant="ghost" onClick={handleArchiveMonth} className={`text-xs ${isBlackAndWhite ? 'text-gray-400 hover:text-white' : 'text-gray-500'}`}>
+                                 <History className="w-3.5 h-3.5 mr-1"/> Bu ayı arşive kaydet
+                             </Button>
+                        </div>
                         <ScheduleViewer 
                             result={result} 
                             setResult={setResult}
-                            services={services} 
-                            staff={staff} 
-                            year={year} 
+                            services={services}
+                            staff={staff}
+                            year={year}
                             month={month}
                             isBlackAndWhite={isBlackAndWhite}
                             handleDownload={() => exportToExcel(result, services, year, month, staff)}
                             isReadOnly={isReadOnly}
-                            onShare={!isReadOnly ? handleCreateShareLink : undefined}
+                            onShare={handleCreateShareLink}
                         />
-                    </div>
+                    </>
                 )}
             </div>
         )}
+
+        {activeTab === 'history' && (
+            <HistoryManager 
+                mode={MODE}
+                isBlackAndWhite={isBlackAndWhite}
+                onLoad={handleLoadHistory}
+            />
+        )}
       </main>
 
-      {shareLink && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-              <div className={`p-6 rounded-2xl shadow-xl w-full max-w-lg ${isBlackAndWhite ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
-                  <div className="flex justify-between items-center mb-4">
-                      <h3 className={`font-bold text-lg ${isBlackAndWhite ? 'text-white' : 'text-gray-900'}`}>Paylaşım Linki Oluşturuldu</h3>
-                      <button onClick={() => setShareLink(null)} className="p-1 rounded hover:bg-black/10"><X className="w-5 h-5 text-gray-500" /></button>
-                  </div>
-                  <div className={`p-3 rounded-lg mb-4 flex gap-2 items-center break-all text-sm font-mono border ${isBlackAndWhite ? 'bg-slate-950 border-slate-800 text-indigo-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-                      {shareLink}
-                  </div>
-                  <div className="flex justify-end gap-2">
-                      <Button variant="secondary" onClick={() => navigator.clipboard.writeText(shareLink).then(() => alert("Link kopyalandı!"))} className={`text-xs ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700' : ''}`}>
-                          <Copy className="w-4 h-4 mr-2" /> Kopyala
-                      </Button>
-                      <Button onClick={() => setShareLink(null)} className={`text-xs ${isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}`}>Tamam</Button>
-                  </div>
-              </div>
-          </div>
+      {/* Holiday Modal */}
+      {showHolidayModal && (
+          <DateSelectModal 
+              isOpen={showHolidayModal}
+              onClose={() => setShowHolidayModal(false)}
+              title="Resmi Tatil Günleri"
+              selectedDays={holidays}
+              onSave={setHolidays}
+              daysInMonth={daysInMonth}
+              color="red"
+          />
       )}
+
+        {showInfoModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                <div className={`rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-scale-in flex flex-col max-h-[85vh] ${isBlackAndWhite ? 'bg-slate-900 border border-slate-700 text-white' : 'bg-white'}`}>
+                    <div className={`p-4 border-b flex justify-between items-center shrink-0 ${isBlackAndWhite ? 'bg-slate-950 border-slate-800' : 'bg-gray-50 border-gray-100'}`}>
+                        <div className="flex gap-4">
+                            <button onClick={() => setInfoTab('manual')} className={`text-sm font-bold pb-1 border-b-2 transition-colors ${infoTab === 'manual' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : 'border-transparent text-gray-400'}`}>
+                                <BookOpen className="inline w-4 h-4 mr-1"/> Kullanma Kılavuzu
+                            </button>
+                            <button onClick={() => setInfoTab('about')} className={`text-sm font-bold pb-1 border-b-2 transition-colors ${infoTab === 'about' ? (isBlackAndWhite ? 'border-indigo-500 text-indigo-400' : 'border-indigo-600 text-indigo-600') : 'border-transparent text-gray-400'}`}>
+                                <Info className="inline w-4 h-4 mr-1"/> Hakkında
+                            </button>
+                        </div>
+                        <button onClick={() => setShowInfoModal(false)} className="p-1 rounded-full hover:bg-black/10"><X className="w-5 h-5" /></button>
+                    </div>
+                    
+                    <div className="p-6 overflow-y-auto custom-scrollbar">
+                        {infoTab === 'about' ? (
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-lg text-indigo-500">Nöbetmatik Enterprise (Hekim Modülü)</h3>
+                                <p className={isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}>
+                                    Bu modül, kıdem ve grup öncelikli çalışan doktorlar için optimize edilmiştir.
+                                    Servis öncelikleri, acil servis kotaları ve hafta sonu limitlerini dikkate alarak adil dağıtım yapar.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                                        <MousePointerClick className="w-4 h-4"/> 1. Personel Yönetimi
+                                    </h4>
+                                    <div className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        Doktorları ekleyin, kıdemlerini (1, 2, 3) ve gruplarını (A, B, C, D) belirleyin.
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                                        <Settings2 className="w-4 h-4"/> 2. Servis Kuralları
+                                    </h4>
+                                    <div className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        Her servis için hangi kıdemlerin nöbet tutabileceğini ve kaç kişi gerektiğini ayarlayın.
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                                        <CalendarIcon className="w-4 h-4"/> 3. Çizelge & Geçmiş
+                                    </h4>
+                                    <p className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        Oluşturulan çizelgeleri geçmişe kaydedebilir ve sonradan inceleyebilirsiniz.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 }

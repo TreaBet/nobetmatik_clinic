@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ScheduleResult, Service, Staff, Group } from '../../../types';
 import { Card, Button } from '../../../components/ui';
@@ -126,10 +127,11 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({
                   <table className="report-table w-full">
                     <thead>
                       <tr>
-                        <th className={`sticky-col w-20 ${isBlackAndWhite ? 'bg-slate-950 text-white' : 'bg-white'}`}>Gün</th>
+                        <th className={`sticky-col w-20 md:w-24 shadow-sm z-30 text-center ${isBlackAndWhite ? 'bg-slate-950 text-white border-b border-slate-700' : 'bg-white text-gray-800'}`}>Gün</th>
                         {services.map(s => (
-                          <th key={s.id} className={`min-w-[150px] ${isBlackAndWhite ? 'bg-slate-950 text-white' : ''}`}>
+                          <th key={s.id} className={`min-w-[150px] md:min-w-[180px] ${isBlackAndWhite ? 'bg-slate-950 text-white border-b border-slate-700' : ''}`}>
                               <div className="truncate">{s.name}</div>
+                              <div className="text-[10px] font-normal opacity-70 mt-0.5">Min: {s.minDailyCount}</div>
                           </th>
                         ))}
                       </tr>
@@ -139,28 +141,44 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({
                           const isHoliday = day.isHoliday;
                           return (
                             <tr key={day.day} className={day.isWeekend || isHoliday ? 'is-weekend' : ''}>
-                              <td className={`sticky-col text-center font-bold p-2 border-r ${isHoliday ? 'text-red-500' : ''}`}>
-                                <div>{day.day}</div>
-                                <div className="text-[10px] opacity-70">{new Date(year, month, day.day).toLocaleString('tr-TR', {weekday:'short'})}</div>
+                              <td className={`sticky-col p-0 border-r ${isBlackAndWhite ? 'bg-slate-900 border-slate-700 text-slate-200' : 'border-gray-100'}`} style={{ height: '1px' }}>
+                                <div className={`flex flex-col items-center justify-center h-full min-h-[50px] py-2 w-full ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/20' : 'bg-red-50') : 'bg-inherit'}`}>
+                                  <span className={`text-xl font-bold leading-none tracking-tight ${isHoliday ? 'text-red-500' : (isBlackAndWhite ? 'text-white' : 'text-gray-800')}`}>{day.day}</span>
+                                  <span className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${isHoliday ? 'text-red-400' : (day.isWeekend ? (isBlackAndWhite ? 'text-indigo-300' : 'text-indigo-600') : (isBlackAndWhite ? 'text-slate-500' : 'text-gray-400'))}`}>
+                                    {new Date(year, month, day.day).toLocaleString('tr-TR', {weekday: 'short'})}
+                                  </span>
+                                </div>
                               </td>
                               {services.map(service => {
                                 const assignments = day.assignments.filter(a => a.serviceId === service.id);
                                 return (
-                                  <td key={service.id} className="p-2 border-b align-top">
-                                    <div className="flex flex-col gap-1">
-                                        {assignments.map((a, idx) => {
-                                          // FILTERING
-                                          if (filterName && !a.staffName.toLowerCase().includes(filterName.toLowerCase())) return null;
-                                          if (filterGroup !== 'Hepsi' && a.group !== filterGroup) return null;
+                                  <td key={service.id} 
+                                    className={`align-top h-full p-2 border-b ${isBlackAndWhite ? 'border-slate-700' : 'border-gray-100'} ${isHoliday ? (isBlackAndWhite ? 'bg-red-900/10' : 'bg-red-50/30') : ''}`}
+                                    style={{ height: '1px' }}
+                                  >
+                                    <div className="flex flex-col gap-1.5 min-h-[40px] h-full justify-start">
+                                        {assignments.length > 0 ? assignments.map((a, idx) => {
+                                          let textClass = 'text-normal';
+                                          if (a.staffId === 'EMPTY') textClass = 'text-empty';
+                                          else if (a.isEmergency) textClass = 'text-emergency';
+                                          
+                                          const dotColor = a.isEmergency 
+                                              ? 'bg-rose-500 shadow-sm' 
+                                              : (isBlackAndWhite ? 'bg-indigo-400' : 'bg-indigo-600');
 
                                           return (
-                                            <div key={idx} className={`text-xs p-1 rounded flex items-center gap-1 ${a.staffId==='EMPTY' ? 'bg-red-100 text-red-600' : (isBlackAndWhite ? 'bg-slate-800 text-slate-200' : 'bg-indigo-50 text-indigo-700')}`}>
-                                                {a.staffId !== 'EMPTY' && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>}
-                                                <span className="truncate">{a.staffName}</span>
+                                            <div 
+                                              key={idx} 
+                                              className={`slot-list-item ${textClass} ${isBlackAndWhite ? 'bg-slate-800' : 'bg-gray-50'} rounded px-2`}
+                                            >
+                                               <div className={`w-2 h-2 rounded-full shrink-0 ${a.staffId === 'EMPTY' ? 'hidden' : dotColor}`}></div>
+                                               <span className="truncate block select-none text-xs">{a.staffName}</span>
                                             </div>
                                           );
-                                        })}
-                                    </div>
+                                        }) : (
+                                          <span className={`text-center text-xs block py-2 border border-dashed rounded h-full flex items-center justify-center select-none opacity-40 ${isBlackAndWhite ? 'border-slate-700 text-slate-600' : 'border-gray-200 text-gray-300'}`}>-</span>
+                                        )}
+                                      </div>
                                   </td>
                                 );
                               })}

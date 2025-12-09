@@ -262,8 +262,8 @@ export default function App({ onBack }: NurseAppProps) {
                              <Activity className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className={`text-xl font-bold tracking-tight ${isBlackAndWhite ? 'text-white' : 'text-slate-900'}`}>Nöbetmatik <span className="text-indigo-500">v2.1</span></h1>
-                            <p className={`text-[10px] font-medium uppercase tracking-widest ${isBlackAndWhite ? 'text-slate-500' : 'text-slate-400'}`}>Enterprise Edition</p>
+                            <h1 className={`text-xl font-bold tracking-tight ${isBlackAndWhite ? 'text-white' : 'text-slate-900'}`}>Nöbetmatik</h1>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${isBlackAndWhite ? 'text-rose-400' : 'text-rose-600'}`}>HEMŞİRE MODÜLÜ</p>
                         </div>
                     </div>
                     
@@ -421,7 +421,7 @@ export default function App({ onBack }: NurseAppProps) {
                     <div className="p-6 overflow-y-auto custom-scrollbar">
                         {infoTab === 'about' ? (
                             <div className="space-y-4">
-                                <h3 className="font-bold text-lg text-indigo-500">Nöbetmatik v2.1 Enterprise</h3>
+                                <h3 className="font-bold text-lg text-indigo-500">Nöbetmatik Enterprise (Hemşire Modülü)</h3>
                                 <p className={isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}>
                                     Bu sistem, sağlık kurumlarındaki karmaşık nöbet çizelgeleme süreçlerini otomatize etmek için geliştirilmiştir.
                                 </p>

@@ -256,12 +256,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
     const inputClass = `w-full rounded-lg shadow-sm p-2.5 border focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${
         isBlackAndWhite 
-        ? '!bg-slate-800 !border-slate-700 text-white placeholder-slate-400' 
+        ? '!bg-slate-800 !border-slate-700 text-slate-100 placeholder-slate-500' 
         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
     }`;
 
     // Button Helper
-    const btnClass = `text-xs px-3 ${isBlackAndWhite ? '!bg-slate-800 !text-white !border-slate-700 hover:!bg-slate-700 hover:!text-white' : ''}`;
+    const btnClass = `text-xs px-3 ${isBlackAndWhite ? '!bg-slate-800 !text-slate-200 !border-slate-700 hover:!bg-slate-700 hover:!text-white' : ''}`;
     
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -269,7 +269,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
              <div className={`flex flex-col xl:flex-row justify-between items-end gap-4 p-6 rounded-xl border shadow-sm transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800' : 'bg-white border-gray-200'}`}>
               <div>
                 <h2 className={`text-2xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-900'}`}>Hemşire Yönetimi</h2>
-                <p className={`mt-1 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Branş, salon ve kıdem bilgilerini buradan yönetin.</p>
+                <p className={`mt-1 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Branş, salon ve kıdem bilgilerini buradan yönetin.</p>
               </div>
               <div className="flex flex-wrap gap-2 w-full xl:w-auto justify-start xl:justify-end">
                  <input type="file" ref={backupInputRef} accept=".json" onChange={handleImportBackup} className="hidden" />
@@ -302,28 +302,28 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             <Card className={`p-6 border-l-4 transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-2">
-                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>AD SOYAD</label>
+                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>AD SOYAD</label>
                         <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className={inputClass} placeholder="Hem. İsim Soyisim" />
                     </div>
                     <div className="md:col-span-2">
-                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>BRANŞ</label>
+                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>BRANŞ</label>
                         <select value={newStaff.unit} onChange={e => setNewStaff({...newStaff, unit: e.target.value})} className={inputClass}>
                             {customUnits.map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
                     </div>
                     <div className="md:col-span-2">
-                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>ÖZELLİK DURUMU</label>
+                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>ÖZELLİK DURUMU</label>
                         <select value={newStaff.specialty} onChange={e => setNewStaff({...newStaff, specialty: e.target.value})} className={inputClass}>
                             <option value="none">Özellik Yok (Normal)</option>
                             {customSpecialties.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
                     <div className="md:col-span-1">
-                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>SALON</label>
+                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>SALON</label>
                         <input type="text" value={newStaff.room} onChange={e => setNewStaff({...newStaff, room: e.target.value})} className={inputClass} placeholder="No" />
                     </div>
                     <div className="md:col-span-2">
-                         <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>KIDEM</label>
+                         <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>KIDEM</label>
                          <select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: parseInt(e.target.value)})} className={inputClass}>
                             <option value={1}>1 - Kıdemli</option>
                             <option value={2}>2 - Tecrübeli</option>
@@ -331,7 +331,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         </select>
                     </div>
                     <div className="md:col-span-2">
-                         <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>HEDEF / HS</label>
+                         <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>HEDEF / HS</label>
                          <div className="flex gap-1">
                              <input type="number" value={newStaff.quotaService} onChange={e => setNewStaff({...newStaff, quotaService: parseInt(e.target.value) || 0})} className={inputClass} placeholder="Hedef" />
                              <input type="number" value={newStaff.weekendLimit} onChange={e => setNewStaff({...newStaff, weekendLimit: parseInt(e.target.value) || 0})} className={inputClass} placeholder="HS" />
@@ -348,7 +348,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
             {/* Staff List */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {staff.length === 0 && (
-                    <div className={`col-span-full py-12 text-center rounded-xl border border-dashed ${isBlackAndWhite ? 'border-slate-700 text-gray-500' : 'border-gray-300 text-gray-400'}`}>
+                    <div className={`col-span-full py-12 text-center rounded-xl border border-dashed ${isBlackAndWhite ? 'border-slate-700 text-slate-500' : 'border-gray-300 text-gray-400'}`}>
                         <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
                         <p>Henüz personel eklenmedi. Manuel ekleyebilir veya Excel/Yedek yükleyebilirsiniz.</p>
                     </div>
@@ -358,7 +358,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         key={person.id} 
                         className={`p-4 relative group hover:shadow-lg transition-all border-l-4 ${
                             isBlackAndWhite 
-                            ? `!bg-slate-900 !border-slate-800 !text-white ${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-slate-700 opacity-60'}` 
+                            ? `!bg-slate-900 !border-slate-800 !text-slate-200 ${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-slate-700 opacity-60'}` 
                             : `${person.isActive !== false ? 'border-l-indigo-500' : 'border-l-gray-300 bg-gray-50 opacity-60'}`
                         }`}
                     >
@@ -366,7 +366,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                             onClick={(e) => toggleStaffActive(e, person.id)} 
                             className={`absolute top-3 left-3 transition-colors z-20 p-1 rounded-full ${
                                 person.isActive !== false 
-                                ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' 
+                                ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10' 
                                 : (isBlackAndWhite ? 'text-slate-600 hover:text-slate-400 hover:bg-slate-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100')
                             }`}
                         >
@@ -378,7 +378,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                             onClick={(e) => { e.stopPropagation(); setEditingStaff({...person}); }} 
                             className={`absolute top-3 right-10 transition-colors z-20 p-1 rounded-full ${
                                 isBlackAndWhite 
-                                ? 'text-gray-600 hover:text-indigo-400 hover:bg-slate-800' 
+                                ? 'text-slate-500 hover:text-indigo-400 hover:bg-slate-800' 
                                 : 'text-gray-300 hover:text-indigo-500 hover:bg-indigo-50'
                             }`}
                             title="Personeli Düzenle"
@@ -390,7 +390,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                             onClick={(e) => handleDeleteStaff(e, person.id)} 
                             className={`absolute top-3 right-3 transition-colors z-20 p-1 rounded-full ${
                                 isBlackAndWhite 
-                                ? 'text-gray-600 hover:text-red-400 hover:bg-slate-800' 
+                                ? 'text-slate-500 hover:text-red-400 hover:bg-slate-800' 
                                 : 'text-gray-300 hover:text-red-500 hover:bg-red-50'
                             }`}
                         >
@@ -398,15 +398,20 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         </button>
                         
                         <div className="flex items-center gap-3 mb-3 ml-8">
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
                                  isBlackAndWhite 
-                                 ? (person.isActive !== false ? 'bg-indigo-900 text-indigo-200' : 'bg-slate-800 text-slate-500') 
+                                 ? (person.isActive !== false ? 'bg-indigo-900/50 text-indigo-300' : 'bg-slate-800 text-slate-500') 
                                  : (person.isActive !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-400')
                              }`}>
                                  {person.name.charAt(0)}
                              </div>
                              <div className="min-w-0">
-                                 <h4 className={`font-bold truncate pr-6 ${person.isActive === false && 'line-through'}`}>{person.name}</h4>
+                                 <h4 className={`font-bold truncate pr-6 flex items-center gap-1 ${person.isActive === false && 'line-through'}`}>
+                                     {person.name}
+                                     {person.role === 1 && (
+                                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                     )}
+                                 </h4>
                                  <div className="flex flex-wrap gap-2 text-xs opacity-70 mt-1">
                                      <span className="flex items-center gap-1"><Stethoscope className="w-3 h-3"/> {person.unit}</span>
                                      <span>|</span>
@@ -419,8 +424,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         {person.specialty && person.specialty !== 'none' && (
                             <div className={`mb-3 ml-8 text-xs font-bold px-2 py-1 rounded inline-flex items-center gap-1 ${
                                 person.specialty === 'Transplantasyon' 
-                                ? (isBlackAndWhite ? 'bg-purple-900/50 text-purple-200 border border-purple-800' : 'bg-purple-100 text-purple-700 border border-purple-200')
-                                : (isBlackAndWhite ? 'bg-orange-900/50 text-orange-200 border border-orange-800' : 'bg-orange-100 text-orange-700 border border-orange-200')
+                                ? (isBlackAndWhite ? 'bg-purple-900/40 text-purple-300 border border-purple-800' : 'bg-purple-100 text-purple-700 border border-purple-200')
+                                : (isBlackAndWhite ? 'bg-orange-900/40 text-orange-300 border border-orange-800' : 'bg-orange-100 text-orange-700 border border-orange-200')
                             }`}>
                                 <Star className="w-3 h-3" />
                                 {person.specialty}
@@ -429,11 +434,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
 
                         <div className={`grid grid-cols-2 gap-2 text-center text-xs p-2 rounded-lg mb-4 ${isBlackAndWhite ? 'bg-slate-800' : 'bg-white shadow-sm border border-gray-100'}`}>
                              <div>
-                                 <div className={`font-bold ${person.isActive !== false ? 'text-indigo-500' : 'text-gray-400'}`}>{person.quotaService}</div>
+                                 <div className={`font-bold ${person.isActive !== false ? (isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-500') : 'text-gray-400'}`}>{person.quotaService}</div>
                                  <div className="opacity-60">Hedef</div>
                              </div>
                              <div>
-                                 <div className={`font-bold ${person.isActive !== false ? 'text-rose-500' : 'text-gray-400'}`}>{person.weekendLimit}</div>
+                                 <div className={`font-bold ${person.isActive !== false ? (isBlackAndWhite ? 'text-rose-400' : 'text-rose-500') : 'text-gray-400'}`}>{person.weekendLimit}</div>
                                  <div className="opacity-60">HS Limit</div>
                              </div>
                         </div>
@@ -594,7 +599,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                 
                                 <div className="space-y-3 mt-2">
                                     <div>
-                                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Şablon Adı</label>
+                                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Şablon Adı</label>
                                         <input 
                                             type="text" 
                                             value={newPresetName} 
@@ -605,7 +610,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                     </div>
                                     
                                     <div>
-                                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yedek Dosyası (.json)</label>
+                                        <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Yedek Dosyası (.json)</label>
                                         <input 
                                             type="file" 
                                             ref={presetFileInputRef}
@@ -613,7 +618,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                             onChange={handleUploadAndCreatePreset} 
                                             className={`w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:cursor-pointer transition-colors ${
                                                 isBlackAndWhite 
-                                                ? 'file:bg-slate-800 file:text-white hover:file:bg-slate-700 text-gray-400' 
+                                                ? 'file:bg-slate-800 file:text-white hover:file:bg-slate-700 text-slate-400' 
                                                 : 'file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-gray-500'
                                             }`} 
                                         />
@@ -635,14 +640,14 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Hangi Birim?</label>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Hangi Birim?</label>
                                 <select value={bulkUnit} onChange={e => setBulkUnit(e.target.value)} className={inputClass}>
                                     <option value="ALL">TÜM BİRİMLER</option>
                                     {customUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Hangi Kıdem?</label>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Hangi Kıdem?</label>
                                 <select value={bulkRole} onChange={e => setBulkRole(e.target.value)} className={inputClass}>
                                     <option value="ALL">TÜM KIDEMLER</option>
                                     <option value="1">1 - Kıdemli</option>
@@ -654,11 +659,11 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                 </div>
                             </div>
                             <div>
-                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yeni Nöbet Hedefi</label>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Yeni Nöbet Hedefi</label>
                                 <input type="number" value={bulkQuota} onChange={e => setBulkQuota(e.target.value)} className={inputClass} />
                             </div>
                             <div>
-                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Yeni Haftasonu Limiti</label>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Yeni Haftasonu Limiti</label>
                                 <input type="number" value={bulkWeekend} onChange={e => setBulkWeekend(e.target.value)} className={inputClass} />
                             </div>
                         </div>
@@ -681,21 +686,21 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Ad Soyad</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Ad Soyad</label>
                                     <input type="text" value={editingStaff.name} onChange={e => setEditingStaff({...editingStaff, name: e.target.value})} className={inputClass} />
                                 </div>
                                 <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Branş</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Branş</label>
                                     <select value={editingStaff.unit} onChange={e => setEditingStaff({...editingStaff, unit: e.target.value})} className={inputClass}>
                                          {customUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Salon</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Salon</label>
                                     <input type="text" value={editingStaff.room} onChange={e => setEditingStaff({...editingStaff, room: e.target.value})} className={inputClass} />
                                 </div>
                                 <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Kıdem</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Kıdem</label>
                                     <select value={editingStaff.role} onChange={e => setEditingStaff({...editingStaff, role: parseInt(e.target.value)})} className={inputClass}>
                                         <option value={1}>1 - Kıdemli</option>
                                         <option value={2}>2 - Tecrübeli</option>
@@ -703,18 +708,18 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                                     </select>
                                 </div>
                                 <div className="col-span-2">
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Özellik Durumu</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Özellik Durumu</label>
                                     <select value={editingStaff.specialty || 'none'} onChange={e => setEditingStaff({...editingStaff, specialty: e.target.value})} className={inputClass}>
                                         <option value="none">Özellik Yok (Normal)</option>
                                         {customSpecialties.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Aylık Nöbet Hedefi</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Aylık Nöbet Hedefi</label>
                                     <input type="number" value={editingStaff.quotaService} onChange={e => setEditingStaff({...editingStaff, quotaService: parseInt(e.target.value) || 0})} className={inputClass} />
                                 </div>
                                 <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>Haftasonu Limit</label>
+                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-slate-400' : 'text-gray-500'}`}>Haftasonu Limit</label>
                                     <input type="number" value={editingStaff.weekendLimit} onChange={e => setEditingStaff({...editingStaff, weekendLimit: parseInt(e.target.value) || 0})} className={inputClass} />
                                 </div>
                             </div>

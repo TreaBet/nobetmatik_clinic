@@ -17,13 +17,16 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      {/* Background Gradient */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 -z-10"></div>
+      
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12 animate-fade-in">
-           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-4">
-             Nöbetmatik <span className="text-indigo-500">v20</span>
+           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-4 drop-shadow-xl">
+             Nöbetmatik
            </h1>
-           <p className="text-slate-400 text-lg md:text-xl font-light">
+           <p className="text-slate-400 text-lg md:text-xl font-light tracking-wide">
              Kurumsal Akıllı Nöbet Yönetim Sistemi
            </p>
         </div>
@@ -32,14 +35,14 @@ export default function App() {
            {/* Doctor Module Card */}
            <button 
              onClick={() => setMode('doctor')}
-             className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] text-left hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20"
+             className="group relative bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-3xl p-8 hover:bg-slate-800/80 transition-all duration-300 hover:scale-[1.02] text-left hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
            >
-             <div className="absolute top-6 right-6 p-3 bg-indigo-500/20 rounded-2xl group-hover:bg-indigo-500 transition-colors">
+             <div className="absolute top-6 right-6 p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-600 transition-colors duration-300">
                <ShieldCheck className="w-8 h-8 text-indigo-400 group-hover:text-white transition-colors" />
              </div>
              <div className="mt-8">
                <h2 className="text-3xl font-bold text-white mb-2">Doktor</h2>
-               <p className="text-slate-400 leading-relaxed">
+               <p className="text-slate-400 leading-relaxed font-medium">
                  Kıdem esaslı, servis öncelikli ve karmaşık nöbet kuralları için özelleştirilmiş modül.
                </p>
              </div>
@@ -51,14 +54,14 @@ export default function App() {
            {/* Nurse Module Card */}
            <button 
              onClick={() => setMode('nurse')}
-             className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] text-left hover:border-rose-500/50 hover:shadow-2xl hover:shadow-rose-500/20"
+             className="group relative bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-3xl p-8 hover:bg-slate-800/80 transition-all duration-300 hover:scale-[1.02] text-left hover:border-rose-500/50 hover:shadow-2xl hover:shadow-rose-500/10"
            >
-             <div className="absolute top-6 right-6 p-3 bg-rose-500/20 rounded-2xl group-hover:bg-rose-500 transition-colors">
+             <div className="absolute top-6 right-6 p-3 bg-rose-500/10 rounded-2xl group-hover:bg-rose-600 transition-colors duration-300">
                <Heart className="w-8 h-8 text-rose-400 group-hover:text-white transition-colors" />
              </div>
              <div className="mt-8">
                <h2 className="text-3xl font-bold text-white mb-2">Hemşire</h2>
-               <p className="text-slate-400 leading-relaxed">
+               <p className="text-slate-400 leading-relaxed font-medium">
                  Birim bazlı, vardiya sistemine uygun ve esnek nöbet dağılımı için özelleştirilmiş modül.
                </p>
              </div>
@@ -68,7 +71,7 @@ export default function App() {
            </button>
         </div>
         
-        <div className="mt-16 text-center text-slate-500 text-sm">
+        <div className="mt-16 text-center text-slate-600 text-sm">
           © 2025 Nöbetmatik Enterprise. Tüm hakları saklıdır.
         </div>
       </div>
