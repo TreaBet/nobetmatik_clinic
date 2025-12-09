@@ -395,7 +395,7 @@ export const ScheduleViewer: React.FC<ScheduleViewerProps> = ({ result, setResul
 
     // Sorting staff for matrix view (By Unit, then Name)
     const sortedStaff = useMemo(() => {
-        return [...staff].sort((a, b) => a.unit.localeCompare(b.unit) || a.name.localeCompare(b.name));
+        return [...staff].sort((a, b) => (a.unit || "").localeCompare(b.unit || "") || a.name.localeCompare(b.name));
     }, [staff]);
 
     // DARK MODE DROPDOWN STYLES
