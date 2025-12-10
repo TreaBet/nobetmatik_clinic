@@ -2,47 +2,45 @@ name: Docker Image Build & Publish
 
 on:
   push:
-    branches: [ "main" ] # main branch'e push geldiğinde çalışır
-  
-  # Manuel çalıştırmayı etkinleştirir
+    branches: [ "main" ]
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Manuel çalıştırma sebebi (Opsiyonel)'
+        description: 'Manuel çalıştırma sebebi'
         required: false
         default: 'Manuel tetikleme'
 
 env:
   REGISTRY: ghcr.io
-  # Reponun tam adı (örnek: kullanici/repo-ismi)
-  IMAGE_NAME: ${{ github.repository }}
+  # IMAGE_NAME burada tanımlı olsa da, aşağıda küçük harfe çevireceğiz
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Tag, Release ve Checkout için write gerekli
-      packages: write # GHCR'a yazmak için gerekli izin
-      
+      contents: write
+      packages: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # Fetch tags: Önceki sürüm numarasını bulmak için tüm tagleri çeker
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
-      # Yeni sürüm numarasını (vX.Y.Z) hesaplama adımı
+      # --- EKLENEN DÜZELTME ADIMI ---
+      # Docker büyük harf kabul etmediği için repo adını küçültüyoruz
+      - name: Lowercase Image Name
+        run: |
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Determine Next Version Tag
         id: next_version
         run: |
-          # En son sürüm etiketini bul (vX.Y.Z formatında olmasını varsayar)
           LATEST_TAG=$(git describe --tags --match "v*" --abbrev=0 2>/dev/null || echo "v0.0.0")
           
-          # Semantic Versioning (vMAJOR.MINOR.PATCH) artışı
           if [ "$LATEST_TAG" == "v0.0.0" ]; then
             NEW_VERSION="v0.0.1"
           else
-            # Versiyonu parçala
             MAJOR=$(echo $LATEST_TAG | sed 's/v//' | cut -d'.' -f1)
             MINOR=$(echo $LATEST_TAG | sed 's/v//' | cut -d'.' -f2)
             PATCH=$(echo $LATEST_TAG | sed 's/v//' | cut -d'.' -f3)
@@ -54,8 +52,8 @@ jobs:
           fi
           
           echo "Calculated New Version: $NEW_VERSION"
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT # Sonraki adımlar için çıktıyı kaydet
-          
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -68,26 +66,24 @@ jobs:
         with:
           context: .
           push: true
-          # Yeni versiyon (vX.Y.Z) ve latest olarak etiketle
+          # Artık IMAGE_NAME küçük harfli olduğu için hata vermeyecek
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.next_version.outputs.NEW_VERSION }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      # Yeni tag'i oluştur ve push et (release'i tetiklemek için)
       - name: Create Git Tag
         run: git tag ${{ steps.next_version.outputs.NEW_VERSION }}
-        
+
       - name: Push Git Tag
         run: git push origin ${{ steps.next_version.outputs.NEW_VERSION }}
-        
-      # GitHub Release Oluşturma Adımı
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.next_version.outputs.NEW_VERSION }}
           name: Release ${{ steps.next_version.outputs.NEW_VERSION }}
           body: |
-            Bu sürüm, ${{ github.sha }} commit'inden otomatik olarak oluşturulmuştur.
+            Bu sürüm otomatik oluşturulmuştur.
             
             **Docker İmajı:** `docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.next_version.outputs.NEW_VERSION }}`
           draft: false
