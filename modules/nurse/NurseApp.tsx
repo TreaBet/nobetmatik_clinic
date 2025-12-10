@@ -13,7 +13,6 @@ import { StaffManager } from './components/StaffManager';
 import { ServiceManager } from './components/ServiceManager'; 
 import { ScheduleViewer } from './components/ScheduleViewer'; 
 import { useDebounce } from '../../hooks/useDebounce';
-import { Scheduler } from './scheduler';
 
 const loadState = <T,>(key: string, defaultValue: T): T => {
   try {
@@ -220,31 +219,53 @@ export default function App({ onBack }: NurseAppProps) {
 
   const handleGenerate = () => {
       setLoading(true);
+      setResult(null); // Clear previous result
       
-      // Use setTimeout to yield to the main thread so the UI can update to "Loading..."
-      setTimeout(() => {
-          try {
-              const config = {
-                  year,
-                  month,
-                  maxRetries: 50,
-                  randomizeOrder: randomizeDays,
-                  preventEveryOtherDay: preventEveryOther,
-                  unitConstraints: unitConstraints,
-                  dailyTotalTarget: dailyTotalTarget,
-                  holidays: [] 
-              };
-              const scheduler = new Scheduler(staff, services, config);
-              const res = scheduler.generate();
-              setResult(res);
+      const config = {
+          year,
+          month,
+          maxRetries: 50,
+          randomizeOrder: randomizeDays,
+          preventEveryOtherDay: preventEveryOther,
+          unitConstraints: unitConstraints,
+          dailyTotalTarget: dailyTotalTarget,
+          holidays: [] 
+      };
+
+      // Correctly instantiate the worker using standard URL constructor
+      const worker = new Worker(new URL('../../workers/scheduler.worker.ts', import.meta.url), {
+          type: 'module',
+      });
+
+      worker.onmessage = (e: MessageEvent) => {
+          const { status, result: workerResult, message } = e.data;
+          
+          if (status === 'success') {
+              setResult(workerResult);
+              // Only switch tab if successful
               setActiveTab('generate');
-          } catch (error: any) {
-              console.error(error);
-              alert("Çizelge oluşturulamadı: " + error.message);
-          } finally {
-              setLoading(false);
+          } else {
+              console.error("Worker Error:", message);
+              alert("Çizelge oluşturulamadı: " + message);
           }
-      }, 100);
+          setLoading(false);
+          worker.terminate();
+      };
+
+      worker.onerror = (err) => {
+          console.error("Worker Execution Error:", err);
+          alert("İşlem sırasında bir hata oluştu.");
+          setLoading(false);
+          worker.terminate();
+      };
+
+      worker.postMessage({
+          mode: 'nurse',
+          staff,
+          services,
+          config,
+          previousSchedule: null // Nurse mode doesn't use previous schedule currently
+      });
   };
   
   const handleDownload = () => {
@@ -355,46 +376,48 @@ export default function App({ onBack }: NurseAppProps) {
 
             {(activeTab === 'generate' || isReadOnly) && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {!isReadOnly && (
-                        <Card className={`p-6 border-l-4 transition-colors hover-lift ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>AY</label>
-                                    <select value={month} onChange={e => setMonth(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
-                                        {Array.from({length: 12}, (_, i) => i).map(m => (
-                                            <option key={m} value={m}>{new Date(2024, m).toLocaleString('tr-TR', { month: 'long' })}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>YIL</label>
-                                    <input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
-                                </div>
-                                
-                                <div className="flex items-center gap-3 pb-2">
-                                     <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <input type="checkbox" checked={randomizeDays} onChange={e => setRandomizeDays(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                        <span>Rastgele Sıra</span>
-                                     </label>
-                                     <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <input type="checkbox" checked={preventEveryOther} onChange={e => setPreventEveryOther(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                        <span>Gün Aşırı Engelle</span>
-                                     </label>
-                                </div>
-
-                                <Button onClick={handleGenerate} disabled={loading} className={`h-[42px] ${isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}`}>
-                                    {loading ? 'Hesaplanıyor...' : 'Çizelgeyi Oluştur'}
-                                </Button>
+                    <Card className={`p-6 border-l-4 transition-colors ${isBlackAndWhite ? '!bg-slate-900 !border-slate-800 border-l-indigo-500' : 'border-l-indigo-500'}`}>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                            <div>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>AY</label>
+                                <select value={month} onChange={e => setMonth(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`} disabled={isReadOnly}>
+                                    {Array.from({length: 12}, (_, i) => i).map(m => (
+                                        <option key={m} value={m}>{new Date(2024, m).toLocaleString('tr-TR', { month: 'long' })}</option>
+                                    ))}
+                                </select>
                             </div>
-                        </Card>
-                    )}
+                            <div>
+                                <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}`}>YIL</label>
+                                <input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} className={`w-full rounded-lg shadow-sm p-2.5 border outline-none ${isBlackAndWhite ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`} disabled={isReadOnly} />
+                            </div>
+                            
+                            <div className="flex flex-col gap-2 pb-1">
+                                <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <input type="checkbox" checked={randomizeDays} onChange={e => setRandomizeDays(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" disabled={isReadOnly} />
+                                    <span>Rastgele Sıra</span>
+                                </label>
+                                <label className={`flex items-center gap-2 cursor-pointer text-sm font-medium ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <input type="checkbox" checked={preventEveryOther} onChange={e => setPreventEveryOther(e.target.checked)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" disabled={isReadOnly} />
+                                    <span>Gün Aşırı Engelle</span>
+                                </label>
+                            </div>
+
+                            <div className="flex gap-2">
+                                {!isReadOnly && (
+                                    <Button onClick={handleGenerate} disabled={loading} className={`w-full h-[42px] ${isBlackAndWhite ? '!bg-indigo-600 !border-indigo-500' : ''}`}>
+                                        {loading ? '...' : 'Oluştur'}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </Card>
 
                     {loading && (
-                         <div className="py-20 text-center animate-pulse">
+                        <div className="py-20 text-center animate-pulse">
                             <div className={`text-5xl mb-4 font-bold ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-600'}`}>...</div>
-                            <h3 className={`text-xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-800'}`}>Nöbetler Dağıtılıyor</h3>
-                            <p className={isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}>Milyonlarca olasılık Monte Carlo simülasyonu ile hesaplanıyor.</p>
-                         </div>
+                            <h3 className={`text-xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-800'}`}>Hesaplanıyor</h3>
+                            <p className={isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}>Akıllı simülasyon arka planda çalışıyor.</p>
+                        </div>
                     )}
 
                     {!loading && result && (
@@ -433,35 +456,35 @@ export default function App({ onBack }: NurseAppProps) {
                     <div className="p-6 overflow-y-auto custom-scrollbar">
                         {infoTab === 'about' ? (
                             <div className="space-y-4">
-                                <h3 className="font-bold text-lg text-indigo-500">Nöbetmatik Enterprise (Hemşire Modülü)</h3>
+                                <h3 className="font-bold text-lg text-rose-500">Nöbetmatik Enterprise (Hemşire Modülü)</h3>
                                 <p className={isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}>
-                                    Bu sistem, sağlık kurumlarındaki karmaşık nöbet çizelgeleme süreçlerini otomatize etmek için geliştirilmiştir.
+                                    Bu modül, vardiya usulü çalışan, birim ve özellik (sertifika) bazlı kısıtlamalara sahip hemşire çizelgeleri için optimize edilmiştir.
                                 </p>
                             </div>
                         ) : (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-rose-400' : 'text-rose-600'}`}>
                                         <MousePointerClick className="w-4 h-4"/> 1. Personel Yönetimi
                                     </h4>
                                     <div className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Personel ekleyin, birimlerini belirleyin ve oda arkadaşı detaylarını girin.
+                                        Hemşireleri ekleyin, birimlerini, özelliklerini (Yara Bakım vb.) ve kıdemlerini belirleyin.
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-rose-400' : 'text-rose-600'}`}>
                                         <Settings2 className="w-4 h-4"/> 2. Servis Kuralları
                                     </h4>
                                     <div className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Servislerinizi ve günlük kişi sayılarını (Min-Max) tanımlayın.
+                                        Servislerin min/max kişi sayılarını ve zorunlu birim kısıtlamalarını ayarlayın.
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-700'}`}>
-                                        <DoorOpen className="w-4 h-4"/> 3. Oda & Çakışma Mantığı
+                                    <h4 className={`font-bold flex items-center gap-2 ${isBlackAndWhite ? 'text-rose-400' : 'text-rose-600'}`}>
+                                        <Zap className="w-4 h-4"/> 3. Otomatik Oluştur
                                     </h4>
                                     <p className={`text-sm ${isBlackAndWhite ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Aynı odada kalan kişilerin salon numarasını aynı girin.
+                                        Sistem, belirttiğiniz günlük toplam hedef sayısına ve kurallara göre en uygun çizelgeyi oluşturur.
                                     </p>
                                 </div>
                             </div>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { readStaffFromExcel, generateTemplate } from '../../services/excelService';
 import { exportToExcel } from './services/reportService';
 import { exportToJSON, importFromJSON, AppData } from '../../services/backupService';
@@ -14,7 +14,6 @@ import { ScheduleViewer } from './components/ScheduleViewer';
 import { HistoryManager } from '../../components/HistoryManager';
 import { DBService } from '../../services/db';
 import { useDebounce } from '../../hooks/useDebounce';
-import { Scheduler } from './scheduler';
 
 interface DoctorAppProps {
     onBack: () => void;
@@ -193,27 +192,49 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
     setLoading(true);
     setResult(null);
 
-    // Use setTimeout to yield to the main thread so the UI can update to "Loading..."
-    setTimeout(() => {
-        try {
-            const config = {
-                year, month, maxRetries: 1000, 
-                randomizeOrder: randomizeDays, 
-                preventEveryOtherDay: preventEveryOther, 
-                holidays,
-                useFatigueModel,
-                useGeneticAlgorithm
-            };
-            const scheduler = new Scheduler(staff, services, config, previousSchedule);
-            const res = scheduler.generate();
-            setResult(res);
-        } catch (error: any) {
-            console.error(error);
-            alert("Çizelge oluşturulamadı: " + error.message);
-        } finally {
-            setLoading(false);
+    const config = {
+        year, month, maxRetries: 1000, 
+        randomizeOrder: randomizeDays, 
+        preventEveryOtherDay: preventEveryOther, 
+        holidays,
+        useFatigueModel,
+        useGeneticAlgorithm
+    };
+
+    // Instantiate the worker using standard URL constructor
+    const worker = new Worker(new URL('../../workers/scheduler.worker.ts', import.meta.url), {
+        type: 'module',
+    });
+
+    worker.onmessage = (e: MessageEvent) => {
+        const { status, result: workerResult, message } = e.data;
+        
+        if (status === 'success') {
+            setResult(workerResult);
+        } else {
+            console.error("Worker error message:", message);
+            alert("Çizelge oluşturulamadı: " + message);
         }
-    }, 100);
+        
+        setLoading(false);
+        worker.terminate(); // Clean up
+    };
+
+    worker.onerror = (err) => {
+        console.error("Worker Execution Error:", err);
+        alert("İşlem sırasında beklenmeyen bir hata oluştu.");
+        setLoading(false);
+        worker.terminate();
+    };
+
+    // Send data to worker
+    worker.postMessage({
+        mode: 'doctor',
+        staff,
+        services,
+        config,
+        previousSchedule
+    });
   };
 
   const handleArchiveMonth = async () => {
@@ -228,6 +249,9 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
       if (!result) return;
       const link = generateShareLink(result, services, staff, year, month);
       setShareLink(link);
+      navigator.clipboard.writeText(link).then(() => {
+          alert("Link panoya kopyalandı!");
+      });
   };
 
   const handleLoadHistory = (hYear: number, hMonth: number) => {
@@ -375,7 +399,7 @@ export default function DoctorApp({ onBack }: DoctorAppProps) {
                      <div className="py-20 text-center animate-pulse">
                         <div className={`text-5xl mb-4 font-bold ${isBlackAndWhite ? 'text-indigo-400' : 'text-indigo-600'}`}>...</div>
                         <h3 className={`text-xl font-bold ${isBlackAndWhite ? 'text-white' : 'text-gray-800'}`}>Hesaplanıyor</h3>
-                        <p className={isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}>Monte Carlo simülasyonu çalışıyor.</p>
+                        <p className={isBlackAndWhite ? 'text-gray-400' : 'text-gray-500'}>Monte Carlo simülasyonu arka planda çalışıyor.</p>
                      </div>
                 )}
 
