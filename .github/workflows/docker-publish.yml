@@ -26,11 +26,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      # --- DÜZELTİLEN ADIM ---
-      # Repo adını (TreaBet) küçük harfe çevirir (treabet) ve IMAGE_NAME'e atar
+      # --- GARANTİ DÜZELTME ---
+      # Repo adını küçültüp bir 'output' (çıktı) olarak saklıyoruz.
+      # Bu yöntem env değişkeninden daha güvenilirdir.
       - name: Lowercase Image Name
+        id: lowercase_repo
         run: |
-          echo "IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          LOWERCASE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_name=$LOWERCASE_NAME" >> $GITHUB_OUTPUT
+          echo "Dönüştürülen isim: $LOWERCASE_NAME"
 
       - name: Determine Next Version Tag
         id: next_version
@@ -65,9 +69,11 @@ jobs:
         with:
           context: .
           push: true
+          # BURASI DEĞİŞTİ: Artık doğrudan yukarıdaki adımın çıktısını (outputs) kullanıyoruz.
+          # Bu sayede büyük harf kalma ihtimali %0'dır.
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.next_version.outputs.NEW_VERSION }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ steps.lowercase_repo.outputs.image_name }}:${{ steps.next_version.outputs.NEW_VERSION }}
+            ${{ env.REGISTRY }}/${{ steps.lowercase_repo.outputs.image_name }}:latest
 
       - name: Create Git Tag
         run: git tag ${{ steps.next_version.outputs.NEW_VERSION }}
@@ -80,9 +86,10 @@ jobs:
         with:
           tag_name: ${{ steps.next_version.outputs.NEW_VERSION }}
           name: Release ${{ steps.next_version.outputs.NEW_VERSION }}
+          # Release metninde de düzeltilmiş ismi kullanıyoruz
           body: |
             Bu sürüm otomatik oluşturulmuştur.
             
-            **Docker İmajı:** `docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.next_version.outputs.NEW_VERSION }}`
+            **Docker İmajı:** `docker pull ${{ env.REGISTRY }}/${{ steps.lowercase_repo.outputs.image_name }}:${{ steps.next_version.outputs.NEW_VERSION }}`
           draft: false
           prerelease: false
